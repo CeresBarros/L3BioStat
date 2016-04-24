@@ -1,0 +1,432 @@
+\documentclass{article}
+
+\usepackage{geometry} % see geometry.pdf on how to lay out the page. There's lots.
+\usepackage[francais]{babel}
+\usepackage{booktabs}
+\usepackage[T1]{fontenc}
+\usepackage[latin1]{inputenc}
+\usepackage{graphicx}
+\usepackage{natbib}
+\usepackage{hyperref}
+\usepackage{fancybox}
+\usepackage[sumlimits]{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{pdfsync}  % enable tex source and pdf output syncronicity
+\usepackage{txfonts}                     % Public Times New Roman text & math font
+
+\newtheoremstyle{rexample}
+    {3pt}%Space above
+    {3pt}% Space below
+    {\small}%Body font
+    {}%Indent amount
+    {\bfseries}%Theorem head font
+    { :}%Punctuation after theorem head
+    {.5em}%Space after theorem head
+    {}%Theorem head spec (can be left empty, meaning `normal')
+\theoremstyle{rexample}
+\newtheorem{rexample}{Exemple R - }
+
+\geometry{a4paper} % or letter or a5paper or ... etc
+% \geometry{landscape} % rotated page geometry
+
+\pagestyle{headings}
+\pagenumbering{arabic}
+
+\newcommand{\dataframe}{\textit{data.frame}}
+\newcommand{\R}{\textit{R}}
+
+\title{TD1 : Révisions  \\ Normalité d'une variable \\ Test d'un paramètre \\ Test de comparaison d'échantillons}
+\author{BIO5XX - BIOSTATISTIQUE L3}
+
+\begin{document}
+
+\maketitle
+
+<<setup, include=FALSE>>=
+library(knitr)
+knit_hooks$set(rexample = function(before, options, envir) {
+  if (before)
+    sprintf('\\begin{rexample} ~~ \\begin{quote}%s\\end{quote}\\label{%s}\\hfill{}',
+            options$message,
+            options$label)
+  else print('\\end{rexample}')
+})
+@
+
+
+\shadowbox{\parbox{15cm}{\textbf{Objectifs de la séance} \\ \`A partir des jeux de données proposés et de la problématique biologique soulevée, il s'agit de choisir le bon test statistique et de s'initier avec le logiciel \R}}
+
+
+\section{Les données peupliers}
+
+\textbf{Rappels sur les données} :
+
+Des chercheurs ont planté les arbres dans deux sites différents :
+\begin{itemize}
+  \item un terrain fertile et bien drainé en bordure de ruisseaux
+  \item une crête au sol sablonneux
+\end{itemize}
+
+\subsection{Manipulation des données sous \R}
+
+\subsubsection*{Lire des données depuis un fichier}
+
+\R\ est un langage informatique dédié à l'analyse statistique. On manipule les données sous \R\ par l'intermédiaire de commandes qui doivent être saisies dans un interpréteur. Le plus souvent les données sont enregistrées dans un fichier que l'on demande à \R\ de lire. \R\ construit lors de cette lecture une <<feuille de données>> (\dataframe) que nous devons ranger dans un objet. La commande si dessous lit le fichier \textit{peuplier.txt} et range le \dataframe\ créé dans l'objet $peuplier$.
+
+<<lecture_donnees,rexample=TRUE,message='La fonction \\textit{read.table} permet de lire un  fichier. Le premier argument est le  nom du fichier. L\'argument \\textit{header} mit à \\textit{TRUE} indique que la première ligne du fichier contient le nom des colonnes'>>=
+peuplier<-read.table("peuplier.txt",header=TRUE)
+@
+
+Un \dataframe\ peut être vu comme un tableau constitué de colonnes et de lignes. Chaque colonne correspond à une variable et chaque ligne à un individu. Il est possible d'afficher le contenu d'un objet en écrivant son nom dans l'interpréteur.
+
+
+<<afficher_donnees,rexample=TRUE,message='La saisie du nom d\'un objet permet d\'afficher son contenu. L\'appel de la fonction \\textit{head} permet de n\'afficher que le début de l\'objet (tête). Sur votre écran les six premières lignes du jeu de données doivent s\'afficher.'>>=
+head(peuplier)
+@
+
+\subsubsection*{Sélectionner des variables dans un \dataframe}
+
+Chacune des variables constituant le \dataframe\ peut être obtenue individuellement. Il existe plusieurs façon pour réaliser cela. La plus simple est certainement de faire suivre le nom de l'objet contenant le \dataframe\ du signe $\$$ et du nom de la variable souhaité : $peuplier\$Diametre$
+
+<<afficher_colonne,rexample=TRUE,message='La saisie du nom d\'un objet suivie du signe $\\$$ et du nom d\'une des variables contenues dans un \\dataframe\\ permet de ne sélectionner que cette variable dans le \\dataframe. \\\\ \\textbf{Attention, le nom des objets et des variables est sensible à la casse (majuscule ou minuscule) prenez garde à les saisir correctement}'>>=
+peuplier$Diametre
+@
+
+\subsubsection*{Sélectionner des individus dans un \dataframe}
+
+
+Il est de même possible de sélectionner toutes les données relatives à un individu (sélectionner une ou plusieurs ligne du \dataframe). Pour réaliser cette sélection il faut s'appuyer sur le fait qu'un \dataframe\ peut être considéré comme un tableau. Chaque case du tableau peut être individuellement sélectionnée en indiquant ses coordonnées $x$ et $y$ entre crochets séparées par une virgule :
+
+\begin{itemize}
+  \item $peuplier[x,y]$ où x indique un individu (ou ligne) et y une variable (ou colonne).
+  \item Si l'on spécifie uniquement le numéro d'individu alors toutes les valeurs associées sont retournées.
+  \item Il  est aussi possible de spécifier une série d'individus par un intervalle : $peuplier[x_{1}:x_{2},]$
+  \item ou par une liste d'individus : $peuplier[c(x_{1},x_{2},x_{3},x_{4}),]$.
+\end{itemize}
+
+La selection combinée de certaines variables pour certains individus s'exprime donc selon le modèle suivant :
+
+$peuplier[c(x_{1},x_{2},x_{3},x_{4}),c(v_{1},v_{2})]$.
+
+<<selctionner_donnees,rexample=TRUE,message=' \\`A l\'aide des commandes suivantes, il est tour à tour possible de selectionner : les données relatives à l\'individu $1$, les données des individus $2$ ,  $3$, $4$ et $5$, les données des individus $3$, $7$ et $9$ et les valeurs des variables $Annee$ et $Hauteur$ pour ces même individus. Faites attention au fait que le nom dans variables est ici entourés de simples quotes <<$\'$>>'>>=
+peuplier[1,]
+peuplier[2:5,]
+peuplier[c(3,7,9),]
+peuplier[c(3,7,9),c('Annee','Hauteur')]
+@
+
+\subsubsection*{Sélectionner des individus dans un \dataframe\ selon un critère}
+
+La sélection d'individus peut aussi être réalisée selon des critères définis à partir
+des variables du \dataframe\.. Nous pouvons par exemple sélectionner les peupliers
+d'un certain âge, plus haut qu'une certaine taille... Pour cela, à la place d'indiquer comme
+précédemment des numéros d'individus, nous allons fournir la condition de sélection. Pour
+obtenir tous les peupliers âgés de x ans nous écrirons : $peuplier[peuplier\$Age==x,]$.
+Les opérateurs de comparaisons sont :
+
+
+		%%%%%%%%%
+		%%
+		%%
+		%% Table opérateurs de comparaison
+		%%
+		%%
+		%%%%%%%%%
+
+
+
+
+\begin{table}[h]
+\begin{center}
+\begin{tabular}{p{3cm}p{2cm}c}
+\toprule[0.05cm]
+Opérateur & &représentation dans \R \\
+\hline
+égalité             &($=$)& $==$ \\
+différent          &($\neq$)& $!=$ \\
+supérieur       &($>$)& $>$ \\
+supérieur ou égale  &($\geq$)& $>=$ \\
+inférieur  &($<$)& $<$ \\
+inférieur ou égale  &($\leq$)& $<=$ \\
+\bottomrule[0.05cm]
+\end{tabular}
+\end{center}
+\caption{Liste des opérateurs de comparaison}
+\label{table-operateurs}
+\end{table}%
+
+<<Conditions_donnees,rexample=TRUE,message='La sélection d\'individu selon un critère est possible en indiquant ce critère à la place du numéro des individus que l\'on souhaite retenir. La première commande réalise la sélection des peupliers d\'une hauteur supérieure à $10m$. Il est toujours possible de combiner la sélection d\'individus et de variables, comme le montre la seconde commande'>>=
+peuplier[peuplier$Hauteur > 10,]
+peuplier[peuplier$Hauteur > 10,c('Diametre','Age','Hauteur')]
+@
+
+Il est possible de combiner plusieurs critères de sélection grâce à des opérateurs logiques.
+
+		%%%%%%%%%
+		%%
+		%%
+		%% Table opérateurs logiques
+		%%
+		%%
+		%%%%%%%%%
+
+\begin{table}[h]
+\begin{center}
+\begin{tabular}{lp{2cm}c}
+\toprule[0.05cm]
+Opérateur & &représentation dans \R \\
+\hline
+Les deux conditions doivent être vraies            &($A \: et \: B$)	& \verb+&+ \\
+L'une des deux conditions doit être vraie           &($A \: ou \: B$)	& \verb+|+  \\
+La condition doit être fausse                                 &($non \: A$)	& \verb+!+   \\
+\bottomrule[0.05cm]
+\end{tabular}
+\end{center}
+\caption{Liste des opérateurs logiques}
+\label{table-logique}
+\end{table}%
+
+<<Conjonction_donnees,rexample=TRUE,message='La sélection d\'individu selon plusieurs critères est possible combinant les critères à l\'aide des opérateurs décrits dans la table~\\ref{table-logique}. Ici nous sélectionnons simultanément sur un diamètre inférieur à $7m$ et une hauteur supérieure à $10m$.'>>=
+peuplier[peuplier$Diametre < 7 & peuplier$Hauteur > 10,
+         c('Diametre','Age','Hauteur')]
+@
+
+\subsection{Test d'un paramètre}
+
+\shadowbox{\parbox{13cm}{Quel est  l'intervalle de confiance de la moyenne du poids des arbres âgés de 4 ans
+et plantés l'année 1 ?}}
+
+\subsubsection*{Construction du jeu de données}
+
+La réponse à cette question demande en premier de construire un jeu de données contenant l'ensemble des poids des arbres répondant aux deux critères énoncés.
+
+<<Donnees_test,rexample=TRUE,message='La première commande sélectionne les poids des arbres âgés de $4$ ans et plantés la première année. Le résultat de cette sélection est affecté à un nouvel objet nommé $poids.4ans.annee1$. La deuxième commande affiche la liste des valeurs ainsi sélectionnées. La troisième affiche le nombre de valeurs retenues et la dernière dessine l\'histogramme de ces valeurs'>>=
+poids.4ans.annee1 <- peuplier$Poids[peuplier$Age==4 & peuplier$Annee==1]
+poids.4ans.annee1
+length(poids.4ans.annee1)
+@
+<<Histogramme_donnees_test,fig.height=4,fig.width=4,fig.align='center'>>=
+hist(poids.4ans.annee1)
+@
+
+\subsubsection*{Calcul des paramètres de l'échantillon}
+
+Le calcul de la moyenne est réalisé par la fonction $mean$ l'estimateur de la variance de la population
+est calculé par la fonction $var$. L'écart type est obtenu par la fonction $sd$
+
+<<param_sample>>=
+moyenne.p.4.1 = mean(poids.4ans.annee1)
+moyenne.p.4.1
+var(poids.4ans.annee1)
+sd(poids.4ans.annee1)
+@
+
+\subsubsection{Test de la normalité d'un échantillon}
+
+
+Lorsque l'on calcule un intervalle de confiance, c'est la plupart du temps sous l'hypothèse d'une loi normale. Pour calculer notre intervalle de confiance en connaissance de cause, nous devons donc en premier tester la normalité
+des données.
+
+Une méthode graphique permet de vérifier cette normalité en traçant les quantiles de l'échantillon en fonction
+des quantiles d'une loi normale. Sous l'hypothèse de normalité les points doivent s'aligner sur une droite.
+
+<<qqplots_sample,fig.height=4,fig.width=4,fig.align='center'>>=
+qqnorm(poids.4ans.annee1)
+qqline(poids.4ans.annee1)
+@
+
+Afin d'observer ce que donne un <<qqplot>> avec des données suivant réellement une loi
+normale, nous pouvons simuler un jeu de données possédant la même moyenne et le même
+écart type que nos données mais suivant une loi normale. La fonction $rnorm$ permet de générer
+ces données. Elle accepte trois arguments dans l'ordre :
+
+\begin{quote}
+\begin{itemize}
+\item le nombre de valeurs à générer
+\item la moyenne de ces valeurs
+\item l'écart type de ces valeurs
+\end{itemize}
+
+\end{quote}
+
+<<qqplot_normal>>=
+normal.alea = rnorm(length(poids.4ans.annee1),
+                    mean(poids.4ans.annee1),
+                    sd(poids.4ans.annee1))
+normal.alea
+@
+<<plot_qqplot_normal,fig.height=4,fig.width=4,fig.align='center'>>=
+qqnorm(normal.alea)
+qqline(normal.alea)
+@
+
+Vous pouvez relancez plusieurs fois ces commandes de manière à observer la fluctuation de l'aspect du <<qqplot>>.
+
+Il est aussi possible d'avoir une approche basée sur un test numérique, par exemple en calculant la variable
+$W$ du test de $Shapiro-Wilk$. Pour cela la fonction $shapiro.test$ permet à la fois de calculer cette valeur
+$W$ et de la comparer à sa distribution théorique sous l'hypothèse nulle de normalité des données.
+
+
+<<shapiro_sample>>=
+shapiro.test(poids.4ans.annee1)
+shapiro.test(poids.4ans.annee1)$p.value
+shapiro.test(poids.4ans.annee1)$statistic
+help(shapiro.test)
+@
+
+\subsubsection{Calcul de l'intervalle de confiance}
+
+La moyenne du poids $m$ que nous avons calculé à partir de notre échantillon est une estimation de la
+moyenne  $\mu$ du poids de la population. $m$ fluctue en fonction de l'échantillon que nous analysons. C'est donc une variable aléatoire se distribuant selon une loi normale d'espérance $E[m]$ (voir équation ~\ref{eq:mm}) et de variance $V[m]$ (équation ~\ref{eq:vm}) si le poids se distribue lui même selon une loi normale avec une moyenne $\mu$ et une variance $\sigma^2$ \footnote{Le théorème centrale limite indique que la variable $m$ peut être considérée comme normale quand la taille de l'échantillon est grand}.
+
+\begin{equation}
+E[m]= \mu
+\label{eq:mm}
+\end{equation}
+
+
+\begin{equation}
+V[m]=\frac{\sigma^{2}}{n}
+\label{eq:vm}
+\end{equation}
+
+Donc l'erreur que l'on fait en estimant la moyenne : $\Delta = m - \mu$ est une variable normale de moyenne nulle et de variance $V[m]$. Il est toujours possible de diviser une variable aléatoire par son écart-type pour ramener sa variance à  $1$.
+
+$\frac{\Delta}{\sqrt{\frac{\sigma^2}{n}}}$ est donc une variable normale de moyenne nulle et de variance égale à $1$. Malheureusement nous ne connaissons pas $\sigma^{2}$ mais seulement sont estimation sur l'échantillon $S$. Il est donc possible de réécrire cette variable de la manière suivante :
+
+\begin{equation}
+t = \frac{\Delta}{\sqrt{\frac{S^{2}}{n}}}
+\end{equation}
+
+Qui est une variable se distribuant selon une loi de $student$ à $n-1$ degrés de  liberté.
+Pour un risque global de $5\%$ l'écart type peut se calculer de la façon suivante
+
+\begin{equation}
+\overline{x} + t^{n-1}_{\alpha/2} \sqrt{\frac{S^{2}}{n}} < \mu < \overline{x} +  t^{n-1}_{1-\alpha/2} \sqrt{\frac{S^{2}}{n}}
+\end{equation}
+
+où $t^{n-1}_{\alpha/2}$ est le quantile de la distribution $t$ de $student$ pour $n-1$ degrés de liberté et
+une probabilité $\alpha / 2$. Ce quantile est calculé par la fonction $qt$ de R. Elle accepte comme paramètres:
+
+\begin{quote}
+\begin{itemize}
+\item une probabilité en première argument
+\item un nombre de degrés de liberté en second argument
+\end{itemize}
+
+\noindent \textbf{Attention :}
+
+Du fait de la symétrie de la loi de student
+
+\begin{equation}
+- t^{n-1}_{\alpha/2} =  t^{n-1}_{1-\alpha/2}
+\end{equation}
+
+De plus la loi de $student$ étant définie avec une moyenne nulle :
+
+\begin{equation}
+ t^{n-1}_{\alpha/2} < 0
+\end{equation}
+
+\end{quote}
+
+<<erreur_std>>=
+mm <- mean(poids.4ans.annee1)
+sm <- sqrt(var(poids.4ans.annee1)/length(poids.4ans.annee1))
+df <- length(poids.4ans.annee1)-1
+alpha <- 0.05
+t <- qt(alpha/2,df)
+t
+erreur <-  -t * sm
+erreur
+@
+
+L'erreur calculée doit ensuite être ajoutée ou retranchée à la moyenne estimée pour obtenir
+respectivement la borne supérieure et la borne inférieure de l'intervalle de confiance.
+
+<<interval_confiance>>=
+borne.min <- mm - erreur
+borne.max <- mm + erreur
+borne.min
+borne.max
+@
+
+Nous pouvons enfin visualiser graphiquement la distribution de la variable aléatoire $mm$
+
+<<graph_interval,fig.height=4,fig.width=4,fig.align='center'>>=
+plot(function(x)dt((x - mm) / sm ,df),2,3.2)
+abline(v=borne.min)
+abline(v=borne.max)
+text(borne.min,0.35,expression(t[alpha/2]^(n-1)),adj = c(-0.2,0))
+text(borne.max,0.35,expression(t[1-alpha/2]^(n-1)),adj = c(-0.2,0))
+@
+
+\subsubsection*{Comparaison d'une moyenne observé à une moyenne théorique}
+
+
+\shadowbox{\parbox{13cm}{On voudrait savoir si le poids moyen des arbres âgés de 4 ans et plantés l'année 1 est égal à 2 kg. \\ Faire les calculs dans les deux sites. } }
+
+
+Nous devons en premier lieu préparer les échantillons
+
+<<Comparaison_echantillons,fig.height=4,fig.width=8,fig.align='center'>>=
+poids.4ans.annee1.site1 <- peuplier$Poids[peuplier$Age==4
+                                          & peuplier$Annee==1
+                                          & peuplier$Site==1]
+poids.4ans.annee1.site2 <- peuplier$Poids[peuplier$Age==4
+                                          & peuplier$Annee==1
+                                          & peuplier$Site==2]
+length(poids.4ans.annee1.site1)
+length(poids.4ans.annee1.site2)
+poids.4ans.annee1.site1
+poids.4ans.annee1.site2
+par(mfrow=c(1,2))
+hist(poids.4ans.annee1.site1)
+hist(poids.4ans.annee1.site2)
+mean(poids.4ans.annee1.site1)
+mean(poids.4ans.annee1.site2)
+@
+
+Nous devons réaliser un test de \textit{student} comparant la moyenne estimée par la fonction $mean$ avec la moyenne théorique escomptée $E=2$ dans notre cas. Nous savons pour réaliser le test t que la variable auxiliaire $T$
+
+\begin{equation}
+T_{poids} = \frac{\overline{poids} - E_{poids}}{\sqrt{\sigma^2_{poids}/n}}
+\end{equation}
+
+\noindent suit une loi de \textit{student}.
+
+<<t_value_a_la_main>>=
+m1 = mean(poids.4ans.annee1.site1)
+s1 = sqrt(var(poids.4ans.annee1.site1)/length(poids.4ans.annee1.site1))
+df1 = length(poids.4ans.annee1.site1) -1
+m1
+s1
+df1
+t1 = (m1 - 2)/s1
+t1
+@
+
+La fonction $pt(x,df)$ retourne la probabilité d'observer une valeur de la variable $t$ de \textit{student} supérieure à $x$ avec $df$ degrés de liberté.
+
+Si nous considérons que l'hypothèse alternative est : la moyenne observée est différente de $2$
+alors la $p_{value}$ du test est :
+
+<<t_test_a_la_main>>=
+(1 - pt(t1,df1))*2
+@
+
+Pour le site $1$ la $p_{value}$ est supérieur au risque $\alpha=0.05$ donc nous ne pouvons par rejeter l'hypothèse $H_{0}$.
+
+Refaite le même calcul pour le site $2$.
+
+Il existe une fonction $t.test$ qui réalise un test de $student$ complet à un ou deux échantillons.
+Elle nous permet de réaliser plus facilement ce même test de \textit{student}.
+
+<<t_test_function>>=
+help(t.test)
+t.test(poids.4ans.annee1.site1,mu=2)
+t.test(poids.4ans.annee1.site2,mu=2)
+@
+
+\end{document}

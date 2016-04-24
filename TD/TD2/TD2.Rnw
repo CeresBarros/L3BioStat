@@ -1,0 +1,331 @@
+\documentclass{article}
+\usepackage{xcolor}
+
+\usepackage{geometry} % see geometry.pdf on how to lay out the page. There's lots.
+\usepackage[francais]{babel}
+\usepackage{booktabs}
+\usepackage[T1]{fontenc}
+\usepackage[latin1]{inputenc}
+\usepackage{graphicx}
+\usepackage{natbib}
+\usepackage{hyperref}
+\usepackage{fancybox}
+\usepackage{listings}
+\lstloadlanguages{R}
+\usepackage[sumlimits]{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{pdfsync}  % enable tex source and pdf output syncronicity
+\usepackage{txfonts}                     % Public Times New Roman text & math font
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+
+\lstset{frame=tb,
+language=R,
+aboveskip=3mm,
+belowskip=3mm,
+showstringspaces=false,
+columns=flexible,
+numbers=none,
+keywordstyle=\color{blue},
+numberstyle=\tiny\color{gray},
+commentstyle=\color{dkgreen},
+stringstyle=\color{mauve},
+breaklines=true,
+breakatwhitespace=true,
+tabsize=3
+}
+
+\newtheoremstyle{rexample}
+    {3pt}%Space above
+    {3pt}% Space below
+    {\small}%Body font
+    {}%Indent amount
+    {\bfseries}%Theorem head font
+    { :}%Punctuation after theorem head
+    {.5em}%Space after theorem head
+    {}%Theorem head spec (can be left empty, meaning `normal')
+\theoremstyle{rexample}
+\newtheorem{rexample}{Exemple R - }
+
+\geometry{a4paper} % or letter or a5paper or ... etc
+% \geometry{landscape} % rotated page geometry
+
+\pagestyle{headings}
+\pagenumbering{arabic}
+
+\newcommand{\dataframe}{\textit{data.frame}}
+\newcommand{\R}{\textit{R}}
+
+\title{TD2 : Normalité d'une variable \\ Estimation de la puissance d'un test \\ Test de Fischer}
+
+\author{BIO5XX - BIOSTATISTIQUE L3}
+
+\begin{document}
+
+\maketitle
+
+<<setup, include=FALSE>>=
+library(knitr)
+knit_hooks$set(rexample = function(before, options, envir) {
+  if (before)
+    sprintf('\\begin{rexample} ~~ \\begin{quote}%s\\end{quote}\\label{%s}\\hfill{}',
+            options$message,
+            options$label)
+  else print('\\end{rexample}')
+})
+@
+
+
+\shadowbox{\parbox{15cm}{\textbf{Objectifs de la séance} \\ Réflexions sur les tests de normalité, Test de Fischer}}
+
+\section{Test de normalité : suite}
+
+\subsection{Génération d`'échantillions aléatoires}
+
+\R\ permet de simuler des échantillons numériques en utilisant un générateur de nombres aléatoires. Les générateurs aléatoire proposés dans \R\ produisent des nombres dont la distribution suit une loi de distribution déterminée. Il est ainsi possible de générer des échantillons suivant par exemple une loi normale ou une loi uniforme. Les fonctions de génération d'échantillons aléatoires ont toute un nom commen\c cant par <<r>> et se terminant par une abréviation du nom de la loi. Par exemple :
+
+\begin{quote}
+\begin{itemize}
+\item rnorm pour la loi normale.
+\item runif pour la loi uniforme.
+\item rexp pour la loi exponentielle.
+\end{itemize}
+
+\end{quote}
+
+D'autres lois sont disponibles. Chacune de ces fonctions accepte comme premier paramètre la taille de l'échantillon à construire. Des paramètres supplémentaires correspondant aux paramètres de la loi de distribution peuvent être rajoutés comme la moyenne et l'écart type pour une loi normale. Pour des informations complémentaires concernant ces fonctions vous pouvez consulter l'aide de \R\ en utilisant la commande  $help(rnorm)$ par exemple.
+
+<<randomunif,rexample=TRUE,message='Simulation d\'un échantillon aléatoire de taille $30$ puis de taille $300$ suivant une loi de distribution uniforme.'>>=
+sample30 <- runif(30)
+sample300 <- runif(300)
+sample30
+@
+<<hist:randomunif,fig.align='center',fig.height=4,fig.width=8>>=
+par(mfrow=c(1,2))
+hist(sample30)
+hist(sample300)
+dev.copy(pdf,'sample-unif.pdf',width=12,height=6)
+dev.off()
+@
+
+Essayer de générer des échantillons aléatoires suivant une loi normale avec la fonction \textit{rnorm}
+ou une loi exponentielle à l'aide de la fonction \textit{rexp}
+
+La forme de l'histogramme des valeurs de l'échantillon est d'autant plus semblable à celle de la fonction de densité de la loi utilisée que la taille de l'échantillon est grand. Ceci est dû au biais d'échantillonnage et explique que les tests de normalité d'un échantillon sont d'autant plus puissants que la taille de l'échantillon augmente.
+
+
+\subsection{Comparaison de deux tests de normalité}
+
+Plusieurs tests existent pour tester la normalité d'un échantillon. \R\ propose en standard le test de \textit{Shapiro-Wilk} qui est réalisable par un appel à la fonction $shapiro.test$.
+
+<<shapiro.sample,rexample=TRUE,message='Réalisation d\'un test de \\textit{Shapiro-Wilk} sur les deux échantillons $sample30$ et $sample300$ construit précedement. Les deux dernières commandes montrent qu\'il est possible d\'obtenir uniquement une des valeurs associées au test, ici la $p_{value}$.'>>=
+shapiro.test(sample30)
+shapiro.test(sample300)
+shapiro.test(sample30)$p.value
+shapiro.test(sample300)$p.value
+@
+
+Dans la bibliothèque \textit{nortest} plusieurs autres tests sont disponibles. Nous utiliserons le test nommé $pearson.test$  qui ce base sur un test du $\chi^2$ de conformité à une loi normale.
+
+la fonction $pearson.test$ accepte un argument $x$ qui contient l'échantillon à tester.
+Elle retourne le même type d'information que la fonction $shapiro.test$.
+
+<<pearson:test,rexample=TRUE,message='Calcul de la $p_{value}$ associée aux tests de normalité des deux échantillons $sample30$ et $sample300$ par la méthode de \\textit{Shapiro-Wilk} et celle du test du $\\chi^2$ de conformité. La première commande indique à \\R\\ de charger en mémoire la bibliothèque \\textit{nortest}.'>>=
+#install.packages("nortest",
+#                 repos="http://cran.r-project.org" )
+library(nortest)
+pearson.test(sample30)
+pearson.test(sample300)
+@
+
+\subsection{Signification de la $p_{value}$ associé à  un test}
+
+La $p_{value}$ associée à un test est la probabilité de se tromper si l'on rejette l'hypothèse nulle $H_0$  testée alors que celle-ci est vrai. On parle du risque de première espèce $\alpha$. Pour bien prendre conscience de cette signification, nous vous proposons de jouer avec.
+
+Pour cela nous allons générer des échantillons aléatoires suivant une loi normale de moyenne $E=1$ et d'écart type $\sigma=1$ et tester la normalité de ces échantillons.
+
+\subsubsection{construction du générateur d'échantillons aléatoires}
+
+Pour permettre les comparaisons dans la suite du TD nous ne travaillerons qu'avec des échantillons
+de moyenne $\mu=1$ et d'écart type $\sigma=1$.
+
+<<func:normalea,rexample=TRUE,message='Construction d\'un générateur aléatoire de moyenne $\\mu=1$ et d\'écart type $\\sigma=1$ suivant une loi normale.'>>=
+normalea <- function(x) rnorm(x,1,1)
+mean(normalea(10000))
+sd(normalea(10000))
+@
+
+
+\subsubsection{Construction des fonctions de test}
+
+Pour ne récuperer que les $P_{values}$ des tests de normalité de Shapiro et de Pearson, on construit deux fonction $shapiro.normtest.pvalue$ et $pearson.normtest.pvalue$
+
+<<func:nortest,rexample=TRUE,message='Construction de fonctions retournant pour un echantillon $x$ la $p_{value}$ des tests $shapiro.test$ et $pearson.test$.'>>=
+shapiro.normtest.pvalue <- function(x) shapiro.test(x)$p.value
+pearson.normtest.pvalue <- function(x) pearson.test(x)$p.value
+shapiro.normtest.pvalue(sample30)
+pearson.normtest.pvalue(sample30)
+@
+
+<<test:nortest,rexample=TRUE,message='La fonction $rep$ permet de répéter une même valeur plusieurs fois. Ici la valeur 30 est répétée 20 fois. La fonction $mapply$ permet de relancer une même fonction pour toute une série de parametres. La fonction $table$ retourne pour chacune des modalités d\'une variable discrète l\'effectif associé.'>>=
+rep(30,20)
+mapply(function(x) shapiro.normtest.pvalue(normalea(x)),rep(30,20))
+mapply(function(x) shapiro.normtest.pvalue(normalea(x)),rep(30,20)) > 0.05
+table(mapply(function(x) shapiro.normtest.pvalue(normalea(x)),rep(30,20)) > 0.05)
+table(mapply(function(x) shapiro.normtest.pvalue(normalea(x)),rep(30,20)) > 0.05)
+table(mapply(function(x) shapiro.normtest.pvalue(normalea(x)),rep(30,20)) > 0.05)
+table(mapply(function(x) shapiro.normtest.pvalue(normalea(x)),rep(30,20)) > 0.05)
+@
+
+Refaite le calcul du nombre de tests positifs et négatifs en passant :
+
+\begin{itemize}
+  \item le nombre d'échantillons testés de 20 à 1000.
+  \item la taille des échantillons de 30 à 300
+  \item le test de shapiro à pearson
+\end{itemize}
+
+<<fig:alpha1,fig.align='center',fig.height=4,fig.width=4>>=
+rep = factor(mapply(function(x) shapiro.normtest.pvalue(normalea(x)),
+                    rep(30,1000)
+                   ) > 0.05)
+table(rep)
+plot(rep)
+@
+
+<<fig:alpha2,fig.align='center',fig.height=4,fig.width=4>>=
+rep = factor(mapply(function(x) shapiro.normtest.pvalue(normalea(x)),
+                    rep(300,1000)
+                   ) > 0.05)
+table(rep)
+@
+
+<<fig:alpha3,fig.align='center',fig.height=4,fig.width=4>>=
+rep = factor(mapply(function(x) pearson.normtest.pvalue(normalea(x)),
+                    rep(30,1000)
+                   ) > 0.05)
+table(rep)
+@
+
+<<fig:alpha4,fig.align='center',fig.height=4,fig.width=4>>=
+rep = factor(mapply(function(x) pearson.normtest.pvalue(normalea(x)),
+                    rep(300,1000)
+                   ) > 0.05)
+table(rep)
+@
+
+\subsection{Estimation de la puissance d'un test}
+
+La $p_{value}$ associée à un test est la probabilité de se tromper si l'on rejette l'hypothèse nulle $H_0$  testée alors que celle-ci est vraie.  Mais ce risque ne dit rien quant à l'acceptation d'$H_0$ . Si je ne peux pas rejeter $H_0$  quel est la probabilité que $H_1$  soit vrai ?
+
+Nous pouvons estimer pour des échantillons où nous savons que $H_1$  est vrai la probabilité que le test ne permette pas de rejeter $H_0$. C'est à dire le risque d'accepter $H_0$  à tord. C'est le risque de seconde espèce $\beta$. La puissance d'un test est définie comme $1 - \beta$. C'est donc la probabilité de rejeter $H_0$  quand $H_1$  est vrai.
+
+Pour estimer la puissance d'un test, le plus simple est de réaliser une série de tests sur des échantillons pour lesquels nous savons que $H_0$  est faux. Par exemple nous pouvons générer des échantillons aléatoires suivant une distribution uniforme ou une distribution exponentielle et tester s'ils suivent une loi normale.
+
+Une loi uniforme est une loi de distribution où la probabilité de tirer n'importe quelle valeur entre deux valeurs extrêmes est équivalente. La probabilité de tirer une valeur hors de cette intervalle est nulle.
+
+Une loi uniforme définie sur l'intervalle:
+\begin{equation}
+ [E-\sigma \sqrt{3} , E + \sigma \sqrt{3}]
+\end{equation}
+ possède une moyenne égale à $E$ et un écart type $\sigma$.
+
+La loi exponentielle est définie par la fonction suivante
+
+\begin{equation}
+f(x;\lambda) = \left\{\begin{matrix}
+                                  \lambda e^{-\lambda x} &,\; x \ge 0, \\
+                                   0 &,\; x < 0.
+                                  \end{matrix}
+                         \right.
+\end{equation}
+
+Sa moyenne et son écart type sont :
+
+\begin{alignat}{2}
+\mathbf{E}_{x}  & = \frac{1}{\lambda}  \\
+\mathbf{\sigma}_{x}  & = \frac{1}{\lambda^2}
+\end{alignat}
+
+\subsubsection{construction des générateurs d'échantillons aléatoires}
+
+Comme pour l'exercice précédant nous ne travaillerons qu'avec des échantillons
+de moyenne $\mu=1$ et d'écart type $\sigma=1$.
+
+<<func:alea,rexample=TRUE,message='Construction de deux générateurs aléatoires supplémentaires de moyenne $\\mu=1$ et d\'écart type $\\sigma=1$ suivant respectivement une loi uniforme et exponentielle.'>>=
+unifalea <- function(x) runif(x,1-sqrt(3),1+sqrt(3))
+expoalea <- function(x) rexp(x,1)
+mean(unifalea(10000))
+mean(unifalea(10000))
+sd(unifalea(10000))
+mean(expoalea(10000))
+sd(expoalea(10000))
+@
+
+\subsubsection{Réalisation du test de puissance}
+
+
+Afin de tester la puissance des deux tests (\textit{Shapiro-Wilk} et \textit{Pearson}) en fonction
+de l'hypothèse alternative (loi uniforme ou loi exponentielle) et de la taille des échantillons testés
+($30$ ou $300$ individus) les commandes suivantes sont exécutées.
+
+
+<<estime.beta,rexample=TRUE,message='On realise une serie de tests sur des jeux de données simulées sous l\'hypothèse alternative H1'>>=
+shap.unif.30 <- factor(mapply(function(x) shapiro.normtest.pvalue(unifalea(x)),
+                       rep(30,1000)
+                             ) > 0.05)
+shap.unif.300 <- factor(mapply(function(x) shapiro.normtest.pvalue(unifalea(x)),
+                               rep(300,1000)
+                              ) > 0.05)
+
+shap.expo.30 <- factor(mapply(function(x) shapiro.normtest.pvalue(expoalea(x)),
+                              rep(30,1000)
+                             ) > 0.05)
+shap.expo.300 <- factor(mapply(function(x) shapiro.normtest.pvalue(expoalea(x)),
+                               rep(300,1000)
+                              ) > 0.05)
+
+pear.unif.30 <- factor(mapply(function(x) pearson.normtest.pvalue(unifalea(x)),
+                       rep(30,1000)
+                             ) > 0.05)
+pear.unif.300 <- factor(mapply(function(x) pearson.normtest.pvalue(unifalea(x)),
+                               rep(300,1000)
+                              ) > 0.05)
+
+pear.expo.30 <- factor(mapply(function(x) pearson.normtest.pvalue(expoalea(x)),
+                              rep(30,1000)
+                             ) > 0.05)
+pear.expo.300 <- factor(mapply(function(x) pearson.normtest.pvalue(expoalea(x)),
+                               rep(300,1000)
+                              ) > 0.05)
+
+@
+
+<<decision:beta,rexample=TRUE,message='Les taux de descision sont présentés sous forme de tables de contingeance et d\'histogrammes'>>=
+table(shap.unif.30)
+table(shap.unif.300)
+table(shap.expo.30)
+table(shap.expo.300)
+table(pear.unif.30)
+table(pear.unif.300)
+table(pear.expo.30)
+table(pear.expo.300)
+@
+<<fig:beta,fig.align='center',fig.height=6,fig.width=8>>=
+par(mfrow=c(2,4))
+plot(shap.unif.30)
+plot(shap.unif.300)
+plot(shap.expo.30)
+plot(shap.expo.300)
+plot(pear.unif.30)
+plot(pear.unif.300)
+plot(pear.expo.30)
+plot(pear.expo.300)
+@
+
+Discuter l'impact du test, de la taille de l'échantillon et de l'hypothèse alternative (uniforme ou exponentielle) sur la puissance du test.
+
+\end{document}
