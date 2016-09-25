@@ -55,7 +55,7 @@ knit_hooks$set(rexample = function(before, options, envir) {
 @
 
 
-\shadowbox{\parbox{15cm}{\textbf{Objectifs de la séance} \\ \`A partir des jeux de données proposés et de la problématique biologique soulevée, il s'agit de choisir le bon test statistique et de s'initier avec le logiciel \R}}
+\shadowbox{\parbox{15cm}{\textbf{Objectifs de la séance} \\ \ À partir des jeux de données proposés et de la problématique biologique soulevée, il s'agit de choisir le bon test statistique et de s'initier avec le logiciel \R}}
 
 
 \section{Les données peupliers}
@@ -72,7 +72,7 @@ Des chercheurs ont planté les arbres dans deux sites différents :
 
 \subsubsection*{Lire des données depuis un fichier}
 
-\R\ est un langage informatique dédié à l'analyse statistique. On manipule les données sous \R\ par l'intermédiaire de commandes qui doivent être saisies dans un interpréteur. Le plus souvent les données sont enregistrées dans un fichier que l'on demande à \R\ de lire. \R\ construit lors de cette lecture une <<feuille de données>> (\dataframe) que nous devons ranger dans un objet. La commande si dessous lit le fichier \textit{peuplier.txt} et range le \dataframe\ créé dans l'objet $peuplier$.
+\R\ est un langage informatique dédié à l'analyse statistique. On manipule les données sous \R\ par l'intermédiaire de commandes qui doivent être saisies dans un interpréteur. Le plus souvent les données sont enregistrées dans un fichier que l'on demande à \R\ de lire. \R\ construit lors de cette lecture une <<feuille de données>> (\dataframe) que nous devons ranger dans un objet. La commande ci-dessous lit le fichier \textit{peuplier.txt} et range le \dataframe\ créé dans l'objet $peuplier$.
 
 <<lecture_donnees,rexample=TRUE,message='La fonction \\textit{read.table} permet de lire un  fichier. Le premier argument est le  nom du fichier. L\'argument \\textit{header} mit à \\textit{TRUE} indique que la première ligne du fichier contient le nom des colonnes'>>=
 peuplier<-read.table("peuplier.txt",header=TRUE)
@@ -87,7 +87,7 @@ head(peuplier)
 
 \subsubsection*{Sélectionner des variables dans un \dataframe}
 
-Chacune des variables constituant le \dataframe\ peut être obtenue individuellement. Il existe plusieurs façon pour réaliser cela. La plus simple est certainement de faire suivre le nom de l'objet contenant le \dataframe\ du signe $\$$ et du nom de la variable souhaité : $peuplier\$Diametre$
+Chacune des variables constituant le \dataframe\ peut être obtenue individuellement. Il existent plusieurs façons pour réaliser cela. La plus simple est certainement de faire suivre le nom de l'objet contenant le \dataframe\ du signe $\$$ et du nom de la variable souhaité : $peuplier\$Diametre$
 
 <<afficher_colonne,rexample=TRUE,message='La saisie du nom d\'un objet suivie du signe $\\$$ et du nom d\'une des variables contenues dans un \\dataframe\\ permet de ne sélectionner que cette variable dans le \\dataframe. \\\\ \\textbf{Attention, le nom des objets et des variables est sensible à la casse (majuscule ou minuscule) prenez garde à les saisir correctement}'>>=
 peuplier$Diametre
@@ -105,7 +105,7 @@ Il est de même possible de sélectionner toutes les données relatives à un indivi
   \item ou par une liste d'individus : $peuplier[c(x_{1},x_{2},x_{3},x_{4}),]$.
 \end{itemize}
 
-La selection combinée de certaines variables pour certains individus s'exprime donc selon le modèle suivant :
+La sélection combinée de certaines variables pour certains individus s'exprime donc selon le modèle suivant :
 
 $peuplier[c(x_{1},x_{2},x_{3},x_{4}),c(v_{1},v_{2})]$.
 
@@ -225,8 +225,7 @@ sd(poids.4ans.annee1)
 \subsubsection{Test de la normalité d'un échantillon}
 
 
-Lorsque l'on calcule un intervalle de confiance, c'est la plupart du temps sous l'hypothèse d'une loi normale. Pour calculer notre intervalle de confiance en connaissance de cause, nous devons donc en premier tester la normalité
-des données.
+Lorsque l'on calcule un intervalle de confiance, c'est la plupart du temps sous l'hypothèse d'une loi normale. Pour calculer notre intervalle de confiance en connaissance de cause, nous devons donc en premier tester la normalité des données.
 
 Une méthode graphique permet de vérifier cette normalité en traçant les quantiles de l'échantillon en fonction
 des quantiles d'une loi normale. Sous l'hypothèse de normalité les points doivent s'aligner sur une droite.
@@ -261,7 +260,7 @@ qqnorm(normal.alea)
 qqline(normal.alea)
 @
 
-Vous pouvez relancez plusieurs fois ces commandes de manière à observer la fluctuation de l'aspect du <<qqplot>>.
+Vous pouvez relancer plusieurs fois ces commandes de manière à observer la fluctuation de l'aspect du <<qqplot>>.
 
 Il est aussi possible d'avoir une approche basée sur un test numérique, par exemple en calculant la variable
 $W$ du test de $Shapiro-Wilk$. Pour cela la fonction $shapiro.test$ permet à la fois de calculer cette valeur
@@ -312,7 +311,7 @@ une probabilité $\alpha / 2$. Ce quantile est calculé par la fonction $qt$ de R.
 \begin{quote}
 \begin{itemize}
 \item une probabilité en première argument
-\item un nombre de degrés de liberté en second argument
+\item un nombre de degrés de liberté en deuxième argument
 \end{itemize}
 
 \noindent \textbf{Attention :}
