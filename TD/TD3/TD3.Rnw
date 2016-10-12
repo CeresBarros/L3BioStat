@@ -201,8 +201,8 @@ somnifere
 @
 
 <<moyenne_somnifere,rexample=TRUE,message='Calcul des moyennes des deux échantillons'>>=
-mean(Hyosciamine)
-mean(Hyoscine)
+mean(somnifere$Hyosciamine)
+mean(somnifere$Hyoscine)
 @
 
 La moyenne obtenue pour l'Hyosciamine semble plus faible que la moyenne obtenue pour l'Hyoscine. Tester l'augmentation ou la diminution du sommeil provoquée par l'une de ces drogues revient donc à tester que la première moyenne est effectivement plus faible que la seconde.
@@ -210,14 +210,16 @@ La moyenne obtenue pour l'Hyosciamine semble plus faible que la moyenne obtenue 
 Il s'agit donc d'un test de $student$ entre deux échantillons appariés. Dans ce cas l'important avant de réaliser ce test est de vérifier que la différence de temps de sommeil entre les deux somnifères pour chaque patients suit à peu près une loi normale.
 
 <<shapiro_somnifere,rexample=TRUE,message='R permet de réaliser des opérations simultanément sur tous les éléments d\'un vecteur. La normalité est testée par la fonction $shapiro.test$'>>=
-Hyosciamine-Hyoscine
-shapiro.test(Hyosciamine-Hyoscine)
+somnifere$Hyosciamine-somnifere$Hyoscine
+shapiro.test(somnifere$Hyosciamine-somnifere$Hyoscine)
 @
 
 Dans notre cas la $p_{value}=\Sexpr{shapiro.test(Hyosciamine-Hyoscine)$p.value}$ est inférieure au risque $\alpha=5\%$ pris habituellement sans en être très éloigné. Nous décidons de continuer malgré tout l'analyse en prenant désormais un risque de $\alpha=3\%$.
 
 <<ttest_somnifere,rexample=TRUE,message='L\'égalité entre les deux moyennes est testée par la fonction $t.test$ en speécifiant le paramêtre $paired=TRUE$'>>=
-t.test(Hyosciamine, Hyoscine, alternative='less', paired=TRUE)
+t.test(somnifere$Hyosciamine,
+       somnifere$Hyoscine,
+       alternative='less', paired=TRUE)
 @
 
 Le test de student à une $p_{valeur}=\Sexpr{t.test(Hyosciamine, Hyoscine, alternative='less', paired=TRUE)$p.value}$. Cette $p_{valeur}$ est inférieure au risque $\alpha=3\%$ que nous avons décidé de prendre. Nous pouvons donc rejeter l'hypothèse nulle $H_0$ et considerer que l'effet des deux drogues est différent.
