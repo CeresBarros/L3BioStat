@@ -1,0 +1,481 @@
+\documentclass{article}
+\usepackage{xcolor}
+
+\usepackage{geometry} % see geometry.pdf on how to lay out the page. There's lots.
+\usepackage[francais]{babel}
+\usepackage{booktabs}
+\usepackage[T1]{fontenc}
+\usepackage[latin1]{inputenc}
+\usepackage{graphicx}
+\usepackage{natbib}
+\usepackage{hyperref}
+\usepackage{fancybox}
+\usepackage{listings}
+\lstloadlanguages{R}
+\usepackage[sumlimits]{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{pdfsync}  % enable tex source and pdf output syncronicity
+\usepackage{txfonts}                     % Public Times New Roman text & math font
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+
+\lstset{frame=tb,
+language=R,
+aboveskip=3mm,
+belowskip=3mm,
+showstringspaces=false,
+columns=flexible,
+numbers=none,
+keywordstyle=\color{blue},
+numberstyle=\tiny\color{gray},
+commentstyle=\color{dkgreen},
+stringstyle=\color{mauve},
+breaklines=true,
+breakatwhitespace=true,
+tabsize=3
+}
+
+\newtheoremstyle{rexample}
+    {3pt}%Space above
+    {3pt}% Space below
+    {\small}%Body font
+    {}%Indent amount
+    {\bfseries}%Theorem head font
+    { :}%Punctuation after theorem head
+    {.5em}%Space after theorem head
+    {}%Theorem head spec (can be left empty, meaning `normal')
+\theoremstyle{rexample}
+\newtheorem{rexample}{Exemple R - }
+
+\geometry{a4paper} % or letter or a5paper or ... etc
+% \geometry{landscape} % rotated page geometry
+
+\pagestyle{headings}
+\pagenumbering{arabic}
+
+\newcommand{\dataframe}{\textit{data.frame}}
+\newcommand{\R}{\textit{R}}
+
+\title{TD4 : Analyse de la variance \\ à un et deux facteurs controlés}
+
+\author{BIO5XX - BIOSTATISTIQUE L3}
+
+\begin{document}
+
+
+\maketitle
+
+<<setup, include=FALSE>>=
+library(knitr)
+knit_hooks$set(rexample = function(before, options, envir) {
+  if (before)
+    sprintf('\\begin{rexample} ~~ \\begin{quote}%s\\end{quote}\\label{%s}\\hfill{}',
+            options$message,
+            options$label)
+  else print('\\end{rexample}')
+})
+@
+
+\shadowbox{\parbox{15cm}{\textbf{Objectifs de la séance} \\ Tester l'effet d'une variable discrète sur une variable continue par la méthode d'analyse de la variance à un ou deux facteurs contrôlés}}
+
+\medskip
+
+L'analyse de la variance à un facteur peut être utilisée pour tester l'effet d'une variable discrète sur une variable continue ce qui est équivalent à comparer simultanément l'égalité entre elles de plusieurs moyennes.
+
+Si l'on considère l'analyse de la variance à un facteur comme une façons de comparer simultanement la moyenne de plusieurs échantillons, les hypothèses testées sont :
+
+\begin{itemize}
+\item{$H_{0}$} Toutes les moyennes sont égales : $ \mu_{1} = \mu_{2} = ... = \mu_{n} $
+\item{$H_{1}$} Au moins une des moyennes testées est différente des autres. Attention cela
+                           ne signifie pas que $ \mu_{1} \neq \mu_{2} \neq ... \neq \mu_{n} $
+\end{itemize}
+
+\section{Culture comparée des bactéries du BCG}
+
+\subsection{Les données expérimentales}
+
+
+L'influence du milieu de culture sur la croissance du bacille de Calmette et Guérin à été testé. Il s'agit de vérifier si l'utilisation d'au moins un des cinq milieux : ${A,B,C,D,E}$ augmente ou diminue cette croissance. Pour chacun des cinq milieux dix cultures sont réalisées dans des conditions équivalentes. \`A la fin de celles-ci un aliquote de chacune des cinquante cultures est prélevé et étalé sur une boite de milieu solide afin de dénombrer le nombre de bactéries présentes.
+
+\begin{table}[!h]
+\begin{center}
+  \begin{tabular}{@{} rrrrr @{}}
+   \toprule[0.05cm]
+    A & B & C & D & E \\
+    \hline
+    10	& 11 &   7 & 12 & 7 \\
+    12	& 18 & 14 &   9 & 6 \\
+      8	& 12 & 10 & 11 & 10 \\
+    10	& 15 & 11 & 10 & 7 \\
+      6	& 13 &   9 &   7 & 7 \\
+    13	&   8 & 10 &   8 & 5 \\
+      9	& 15 &   0 & 13 & 6 \\
+    10	& 16 & 11 & 14& 7 \\
+      8	&   9 &   7 & 10 & 9 \\
+      9	& 13 &   9 & 11 & 6 \\
+   \bottomrule[0.05cm]
+  \end{tabular}
+\end{center}
+\caption{Analyse de la croissance du BCG dans 5 milieux de culture différents. 10 tubes par milieu de culture sont ensemencés à partir d'une même suspension de BCG. Le tableau ci-dessous donne le nombre de colonies obtenues sur boite de Pétri après étalement d'un aliquote de chaque culture. }
+\label{data:BCG}
+\end{table}
+
+
+<<prepare_donnees,rexample=TRUE,message='Construction de la feuille de données à partir du tableau  \\ref{data:BCG}.'>>=
+A <- c(10,12,8,10,6,13,9,10,8,9)
+B <- c(11,18,12,15,13,8,15,16,9,13)
+C <- c(7,14,10,11,9,10,0,11,7,9)
+D <- c(12,9,11,10,7,8,13,14,10,11)
+E <- c(7,6,10,7,7,5,6,7,9,6)
+BCG <- data.frame(A,B,C,D,E)
+BCG
+@
+
+\subsection{Description des échantillons}
+
+\`A la vue de la manipulation \ref{description_donnees}, il semblerait que toutes les moyennes ne sont pas égales. Mais du fait de la faible taille des échantillons testé (dix cultures par milieu) il est important de déterminer si cette fluctuation est statistiquement significative ou si elle reflète juste le biais d'échantillonnage.
+
+Plutôt que de tester l'égalité entre chaque paire de moyenne $\mu_{A}=\mu_{B}$, $\mu_{A}=\mu_{C}$,
+$...$, $\mu_{D}=\mu_{E}$ qui conduirai à analyser $n (n+1)/2$ tests (avec $n=5$ le nombre de conditions). Nous allons tester simultanément l'égalité de toutes les moyennes.
+
+<<description_donnees,rexample=TRUE,message='Analyse descriptive des données BCG. La deuxième commande retourne la matrice de covariance pour chacun des milieux testés. Nous ne sommes dans ce cas intéressés que par la variance observée dans chacun des milieux. Ces variances correspondent à la diagonale de cette matrice qu\'il est possible d\'extraire par la commande $diag$'>>=
+colMeans(BCG)
+var(BCG)
+diag(var(BCG))
+summary(BCG)
+@
+
+\subsection{Test des conditions préalables à la réalisation de l'analyse}
+
+Le test simultané de l'égalité des moyennes de plusieurs échantillons différents entre eux selon un critère contrôlé (ici le milieu de culture) peut être réalisé par la méthode d'analyse de la variance à un facteur contrôlé. Pour pouvoir être réalisé ce test impose certaines conditions sur les données.
+
+\begin{itemize}
+\item Chacun des échantillons testés doit se distribuer selon une loi normale.
+\item La variance de tous les échantillons doivent être égales.
+\end{itemize}
+
+\subsubsection{test de la normalité des échantillons}
+
+Nous allons tester la normalité des échantillons de manière graphique et par le test de normalité de \textit{Shapiro-Wilk}.
+
+\medskip
+
+\begin{quote}
+
+Réaliser ces deux tests à la main pour le milieu $A$. puis regardez la manipulation \ref{manip:normality} pour  réaliser  ce test sur les 5 milieux.
+
+\end{quote}
+
+\medskip
+
+<<manip:normality,rexample=TRUE,message='Test de la normalité des données de chaque échantillon. Le test doit être réalisé sur chacune des colonnes du dataframe $BCG$. C\'est pour nous l\'occasion d\'utiliser la commande $apply$ qui permet d\'appliquer une fonction soit aux lignes, soit aux colonnes d\'un tableau. Le premier argument indique le tableau à analyser, le deuxième si l\'on travaille par ligne ($1$) ou par colonne ($2$). Le dernier indique la fonction à appliquer. Successivement nous utilisons $apply$ pour tracer les 5 qq-plots et pour calculer les 5 tests de \\textit{Shapiro-Wilk}'>>=
+@
+<<manip:normality:plot,fig.align='center',fig.width=8,fig.height=4>>=
+par(mfrow=c(1,5))
+apply(BCG,2,function(x) {qqnorm(x);qqline(x)})
+apply(BCG,2,function(x) shapiro.test(x)$p.value)
+@
+
+L'observation des 5 $p_{values}$ du test de  \textit{Shapiro-Wilk} montre qu'il n'est possible de
+rejeter l'hypothèse de normalité pour aucun des échantillons. Nous continuerons donc l'analyse
+malgré l'aspect des \textit{qq-plot}. Rappelez vous cependant du manque de puissance des tests
+de normalité pour des échantillons de petite taille.
+
+\subsubsection{Test de l'égalité des variances de chacun des échantillons}
+
+Pour comparer deux variances, il est habituel d'utiliser le test de \textit{Fisher}. Lorsque l'on veut tester l'égalité simultanée de plus de 2 variances, il existe comme dans le cas de la comparaison de moyenne un test plus approprié ne nécessitant pas la réalisation de toutes les comparaisons deux à deux. Il s'agit du test de \textit{Bartlett} d'homogénéité des variances.
+
+Ces hypothèses de travail sont :
+
+\begin{itemize}
+\item{$H_{0}$} Toutes les variances sont égales : $ V_{1} = V_{2} = ... = V_{n} $
+\item{$H_{1}$} Au moins une des variances est différentes des autres.
+\end{itemize}
+
+<<manip:bartlett,rexample=TRUE,message='Test de l\'homogénéité des variances des échantillons'>>=
+bartlett.test(BCG)
+@
+
+\subsection{Analyse de la variance}
+
+\subsubsection{La variance totale de l'expérience}
+
+Dans ce cas nous considérons l'ensemble des 50 cultures de manière homogène
+sans tenir compte de la variation du milieu. Nous allons calculer la somme des carrés des
+écarts à la moyenne globale $SCT$.
+
+\begin{equation}
+SCT = \sum(x-\mu_x)^2
+\label{eq:SCT}
+\end{equation}
+
+cette variance total possède $n-1$ degré de liberté avec $n$ le nombre total d'expériences,
+$50$ dans notre cas. $V_{T}$ la variance total est donc égale à
+
+\begin{equation}
+V_{T}= \frac{SCT}{n-1}
+\label{eq:SCT}
+\end{equation}
+
+\noindent Avec $\mu_{x}$ la moyenne globale de toutes les mesures
+
+<<manip:SCT,rexample=TRUE,message='Calcul de SCT selon l\'équation  \\ref{eq:SCT}. La première commande a pour but de regrouper toutes les colonnes du tableau $BCG$ en un seul vecteur'>>=
+x <- rapply(BCG,c)
+x
+SCT = sum((x - mean(x))**2)
+SCT
+VT = SCT/(length(x)-1)
+VT
+@
+
+\subsubsection{La variance intra-groupe de l'expérience}
+
+Il est aussi possible de définir la variance intra-groupe qui ce définit à partir de la somme
+des écarts de chaque expérience à la moyenne de son groupe au carré ($SCE$)
+
+\begin{equation}
+SCE = \sum^{k}_{j=1} \sum^{e}_{i=1} (x_{ij} - \mu_{j})^2
+\label{eq:SCE}
+\end{equation}
+
+\noindent avec $k$ le nombre de conditions et $e$ le nombre d'expérience pour chaque condition. Dans notre car $k=5$ et $e=10$.
+
+Le nombre de degrés de liberté associé à cette variance est  $n-k$ avec $n$ le nombre total d'expériences. Chaque classe retirant un degré de liberté du fait de l'utilisation de sa moyenne
+dans la formule
+
+<<manip:SCE,rexample=TRUE,message='Calcul de $SCE$ selon l\'équation \\ref{eq:SCE}. La fonction $sweep$ permet de retrancher le résultat de $mean(BCG)$ à chacune des colonnes du tableau.'>>=
+colMeans(BCG)
+sweep(BCG,2,colMeans(BCG),'-')**2
+SCE <- sum(sweep(BCG,2,colMeans(BCG),'-')**2)
+SCE
+k=length(BCG)
+VE=SCE/(length(x)-k)
+VE
+@
+
+\subsubsection{La variance inter-groupe de l'expérience}
+
+De manière similaire il est possible de calculer la variance inter-groupe. Elle se calcule à partir
+de la somme des carrés des écarts entre la moyenne de chaque groupe à la moyenne totale, pondéré par la taille des groupes ($SCI$).
+
+\begin{equation}
+SCI = \sum^{k}_{j=1} n_{j} (\mu_{j} - \mu_x)^2
+\label{eq:SCI}
+\end{equation}
+
+\noindent avec $k$ le nombre de groupe, ici $k=5$, $\mu_{j}$ la moyenne des expériences pour le groupe $j$, $\mu_{x}$ la moyenne globale des expériences et $n_{j}$ le nombre d'expérience dans
+le groupe $j$. Dans notre cas tous les $n_{j}$ sont égaux à $10$.
+
+Le nombre de degrés de liberté de cette variance est $k-1$ du fait des $k$ variables utilisés pour la calculer, moins un pour l'utilisation de la moyenne globale qui est une relation les unissant.
+
+<<manip:SCI,rexample=TRUE,message='Calcule de SCI selon l\'équation \\ref{eq:SCI}.'>>=
+apply(BCG,2,length)
+mean(x)
+colMeans(BCG)
+(colMeans(BCG) - mean(x)) ** 2 * apply(BCG,2,length)
+SCI = sum((colMeans(BCG) - mean(x)) ** 2 * apply(BCG,2,length))
+SCI
+VI <- SCI / (length(BCG) -1)
+VI
+@
+
+Il existe une relation entre $SCT$, $SCI$ et $SCI$ telle que:
+
+\begin{equation}
+SCT = SCI + SCE
+\end{equation}
+
+\subsection{Test de l'égalité des moyennes}
+
+Si les $k$ groupes testés se distribuent normalement, si leur variance sont égales. En posant l'hypothèse $H_{0}$ ou toutes les moyennes sont égales on peut montrer que la variance intra-groupe et la variance intergroupe sont deux estimations de la variance totale.
+
+Donc si l'on démontre l'égalité des deux variances $V_{intra}$ et $V_{inter}$ alors on démontre l'égalité des moyennes des différents échantillons.
+
+Dans le cas de l'hypothèse alternative $H_{1}$ où au moins une des moyennes est différente, la variance intergroupe devient plus grande que la variance intragroupe. Nous avons donc
+
+\begin{equation}
+F_{c}=\frac{V_{inter}}{V_{intra}}
+\end{equation}
+
+\noindent avec $F_{c}=1$ sous $H_{0}$ et $F_{c}>1$ sous $H_{1}$
+
+Ici la variable $F_{c}$ suit une loi de \textit{Fischer} à $k-1$ et $n-k$ degrés de liberté. Comme il s'agit
+d'un test unilatéral car $V_{inter} \geq V_{intra}$ la $p_{value}$ du test égale
+
+\begin{equation}
+p_{value} =  1 - F[ >F_{c},(k-1,n-k)]
+\end{equation}
+
+\noindent avec $F[ >F_{c},(k-1,n-k)]$ la probabilité d'observé une valeur de $F > F_{c}$ pour
+$k-1$ et $n-k$ degrés de liberté.
+
+<<manip:Ftest,rexample=TRUE,message='Calcul de la $p_{value}$ associé au test d\'égalité des variances intra-groupe et intergroupe.'>>=
+Fc = VI/VE
+Fc
+1-pf(Fc,k-1,length(x)-k)
+@
+
+\subsection{Utilisation de la fonction d'ANOVA intégré à R}
+
+\subsubsection{Reformatage des données}
+
+L'ANOVA intégrée dans $R$ impose que toutes les données soient dans un même vecteur et qu'un second vecteur contienne pour chaque valeur sa catégorie d'appartenance.
+
+<<manip:format,rexample=TRUE,message='Formatage des données pour l\'ANOVA de R.'>>=
+BCG_Group <- data.frame(UFC   = rapply(BCG,c),
+                        milieu= rep(names(BCG),
+                                    apply(BCG,2,length)))
+BCG_Group
+@
+
+
+
+\subsubsection{Réalisation de l'ANOVA}
+
+L'ANOVA se réalise ensuite facilement par l'utilisation de la fonction $R$ $aov$
+
+<<manip:anova,rexample=TRUE,message='Réalisation du test.'>>=
+a <- aov(BCG_Group$UFC ~ BCG_Group$milieu)
+summary(a)
+@
+
+La $p_{value}$ obtenue permet de rejeter l'hypothèse d'égalité des moyennes pour toutes les catégories. La fonction $pairwise.t.test$ permet de réaliser tous les test $t$ deux à deux afin d'identifier les moyennes différentes des deux autres.
+
+<<manip:pairwise,rexample=TRUE,message='Réalisation de la série de test $t$ grâce à la fonction $pairwise.t.test$.'>>=
+pairwise.t.test(BCG_Group$UFC,
+                BCG_Group$milieu,
+                p.adjust.method="bonferroni",
+                var.equal=T)
+@
+
+L'analyse de variance à deux facteurs a pour objectif de tester l'effet de 2 facteurs sur une variable réponse. Dans le cas d'un plan équilibré complet, le fait d'ajouter 2 facteurs implique également la présence d'une interaction.
+
+\section{Analyse de variance à deux facteurs}
+
+\section*{Rendement laitier de 40 vaches selon leur alimentation}
+
+
+\begin{table}[h]
+\begin{center}
+	\begin{tabular}{rrrrrrrr}
+	         \toprule[0.05cm]
+		\multicolumn{4}{l}{Dose=faible} & \multicolumn{4}{l}{Dose=Forte}\\
+		\hline
+		paille  & foin & herbe & autre & paille  & foin & herbe & autre \\
+		\hline
+		8 & 12 & 10 & 17 & 8 & 10 & 11 & 17 \\
+		11 & 13 & 12 & 13 & 9 & 7 & 9 & 19 \\
+		11 & 14 & 12 & 17 & 8 & 10 & 11 & 17 \\
+		10 & 11 & 13 & 15 & 10 & 12 & 11 & 16 \\
+		7 & 10 & 14 & 13 & 9 & 11 & 12 & 21 \\
+		\bottomrule[0.05cm]
+	\end{tabular}
+	\caption{Rendement laitier de 40 vaches selon leur alimentation}
+	\label{tab:anova-2fac}
+\end{center}
+\end{table}
+
+\begin{itemize}
+\item Facteur A : nature de l'aliment : paille/foin/herbe/autre p=4
+\item Facteur B : dose
+\item Plan complet équilibré.
+\end{itemize}
+
+<<manip:data,rexample=TRUE,message='Préparation des données.'>>=
+x1<-c(8,11,11,10,7)
+x2<-c(12,13,14,11,10)
+x3<-c(17,13,17,15,13)
+x4<-c(8,9,8,10,9)
+x5<-c(8,9,8,10,9)
+x6<-c(10,7,10,12,11)
+x7<-c(11,9,11,11,12)
+x8<-c(17,19,17,16,21)
+rendement<-data.frame(x1,x2,x3,x4,x5,x6,x7,x8)
+colMeans(rendement)
+diag(var(rendement))
+@
+<<manip:data:plot,fig.align='center',fig.width=8,fig.height=4>>=
+boxplot(rendement)
+@
+
+Les moyennes semblent différentes. Mais du fait de la petite taille des échantillons, il est nécessaire de regarder si cette fluctuation est statistiquement significative, ou si elle reflète juste le biais d'échantillonnage. Comme dans le TD précédent, nous allons tester simultanément l'égalité de toutes les moyennes. Du fait de la présence de 2 facteurs, on énonce les hypothèse de mani-re un peu différente.
+
+On va tester les hypothèses suivantes
+
+\begin{description}
+\item[H0] il n'y a pas d'effet du type d'alimentation et de la dose
+\item[H1] il y a un effet de l'alimentation
+\item[H1'] il y a un effet de la dose
+\item[H1''] il y a un effet de l'interaction
+\end{description}
+
+\textbf{Avant d'appliquer le test d'analyse de variance, on doit vérifier }
+
+\begin{enumerate}
+\item  La normalité de chaque échantillon.
+\item l'égalité des variances
+\end{enumerate}
+
+<<manip:shapiro2,rexample=TRUE,message='Test de Shapiro sur chaque échantillon.'>>=
+apply(rendement,2,function(x) shapiro.test(x)$p.value)
+@
+
+Les valeurs de $p_{value}$ données par le test sont toutes plus élevées que le risque $\alpha$ qu'on pourrait se donner et en particulier que $5\%$. On accepte donc l'hypothèse de normalité.
+
+\smallskip
+
+\textbf{Vérifier également la normalité de manière graphique (cf TD précédent).}
+
+\smallskip
+
+<<manip:bartlett2,rexample=TRUE,message='Test  de Bartlett pour vérifier l\'égalité des variances.'>>=
+bartlett.test(rendement)
+@
+
+Donc la $p_{value}$ de $0.5$ est supérieure aux risques habituels. On accepte l'hypothèse d'égalité des variances des différents échantillons. On peut donc appliquer le test d'analyse de variance pour tester l'effet des différents facteurs.
+
+<<manip:aov2,rexample=TRUE,message='Mise en place de l\'analyse de variance.'>>=
+rdt<-c(x1,x2,x3,x4,x5,x6,x7,x8)
+z<-rep(c(1,2,3,4),c(5,5,5,5))
+alim<-rep(z,2)
+dose<-rep(c(0,1),c(20,20))
+rendement_aov<-data.frame(rdt,alim,dose)
+aov1<-aov(rdt~alim+dose+alim*dose,data=rendement_aov)
+summary(aov1)
+@
+
+Interprétation ensemble au tableau de chaque F.
+
+\section{Faire l'exercice seul sous R}
+
+\begin{table}[h!]
+\begin{center}
+	\begin{tabular}{lcccccc}
+	         \toprule[0.05cm]
+		  & \multicolumn{2}{c}{Fertilisant 1} &  \multicolumn{2}{c}{Fertilisant 2} & \multicolumn{2}{c}{Fertilisant 3}   \\
+		 \hline
+		Blé 1 & 14.3 & 14.5 & 18.1 & 17.6 & 17.6 & 18.2 \\
+		 & 11.5 & 13.6 & 17.1 & 17.6 & 18.9 & 18.2 \\
+		 \hline
+		Blé 2 & 12.6 & 11.2 & 10.5 & 12.8 & 15.7 & 17.5 \\
+		 & 11.0 & 12.1 & 8.3 & 9.1 & 16.7 & 16.6 \\
+		\bottomrule[0.05cm]
+	\end{tabular}
+	\caption{Rendement par hectare}
+	\label{TD7:ble-rdt}
+\end{center}
+\end{table}
+
+Description des données (voir table \ref{TD7:ble-rdt}) : Deux types  de blé différents sont récoltés après avoir été semés sur trois parcelles traitées par trois fertilisants différents. On a répliqué chaque expérimentation quatre fois .
+
+
+\begin{enumerate}
+\item Le type de blé est-il influent sur le rendement ?
+\item Le fertilisant est-il influent sur le rendement ?
+\item L'interaction entre le type de blé et le fertilisant est-il influent ?
+\end{enumerate}
+
+\end{document}
