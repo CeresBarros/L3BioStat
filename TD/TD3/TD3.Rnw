@@ -5,7 +5,7 @@
 \usepackage[francais]{babel}
 \usepackage{booktabs}
 \usepackage[T1]{fontenc}
-\usepackage[latin1]{inputenc}
+\usepackage[utf8]{inputenc}
 \usepackage{graphicx}
 \usepackage{natbib}
 \usepackage{hyperref}
@@ -59,7 +59,7 @@ tabsize=3
 \newcommand{\dataframe}{\textit{data.frame}}
 \newcommand{\R}{\textit{R}}
 
-\title{TD3 : Comparaison de deux échantillons \\ paramétrique et non paramétrique}
+\title{TD3 : Comparaison de deux Ã©chantillons \\ paramÃ©trique et non paramÃ©trique}
 
 \author{BIO5XX - BIOSTATISTIQUE L3}
 
@@ -78,32 +78,32 @@ knit_hooks$set(rexample = function(before, options, envir) {
 })
 @
 
-\section{Comparaisons de moyennes entre deux échantillons}
+\section{Comparaisons de moyennes entre deux Ã©chantillons}
 
-\subsection{importer le jeu de données peuplier}
+\subsection{importer le jeu de donnÃ©es peuplier}
 
-Après s'être placé dans le bon répertoire, charger les données peupliers
+AprÃ¨s s'Ãªtre placÃ© dans le bon rÃ©pertoire, charger les donnÃ©es peupliers
 
-<<lit_donnees,rexample=TRUE,message='Chargement des données peupliers et descriptions rapide de ces données .'>>=
+<<lit_donnees,rexample=TRUE,message='Chargement des donnÃ©es peupliers et descriptions rapide de ces donnÃ©es .'>>=
 peuplier<-read.table("peuplier.txt",header = TRUE)
 colnames(peuplier)
 summary(peuplier)
 @
 
-On va s'intéresser à la moyenne du poids des arbres dans le site 1 et dans le site 2. L'objectif du TD est de comparer les moyennes des poids des sites 1 et 2. Pour cela on peut commencer par calculer un intervalle de confiance pour les moyennes des poids dans chaque site. Puis on utilisera un test t de comparaison de 2 échantillons indépendants pour tester les hypothèses $H_0$  : la moyenne du poids des arbres dans le site 1 est égale à la moyenne des poids dans le site 2. $H_1$ - Les moyennes des poids dans les deux sites sont différentes.
+On va s'intÃ©resser Ã  la moyenne du poids des arbres dans le site 1 et dans le site 2. L'objectif du TD est de comparer les moyennes des poids des sites 1 et 2. Pour cela on peut commencer par calculer un intervalle de confiance pour les moyennes des poids dans chaque site. Puis on utilisera un test t de comparaison de 2 Ã©chantillons indÃ©pendants pour tester les hypothÃ¨ses $H_0$  : la moyenne du poids des arbres dans le site 1 est Ã©gale Ã  la moyenne des poids dans le site 2. $H_1$ - Les moyennes des poids dans les deux sites sont diffÃ©rentes.
 
-\subsection{Normalité des échantillons}
+\subsection{NormalitÃ© des Ã©chantillons}
 
-\subsubsection{Tester la normalité de la variable poids dans chaque site. \\ Constater que cette hypothèse n'est pas respectée}.
+\subsubsection{Tester la normalitÃ© de la variable poids dans chaque site. \\ Constater que cette hypothÃ¨se est respectÃ©e.}
 
-En fait on va travailler dans chaque site sur les arbres âgés de 4 ans plantés l'année 1. Vérifier la normalité dans chaque site du poids des arbres âgés de 4 ans, planté l'année 1.
+En fait on va travailler dans chaque site sur les arbres Ã¢gÃ©s de 4 ans plantÃ©s l'annÃ©e 1. VÃ©rifier la normalitÃ© dans chaque site du poids des arbres Ã¢gÃ©s de 4 ans, plantÃ© l'annÃ©e 1.
 
-Rmq1. Vous utiliserez l'un des tests de normalité vu précedement.
+Rmq1. Vous utiliserez l'un des tests de normalitÃ© vu prÃ©cedement.
 
-Rmq2. Vous aurez sans doute besoin de préparer les données pour avoir les poids de chaque site dans 2 fichier séparés. Vous pouvez utiliser la commande subset
-Préparer les données
+Rmq2. Vous aurez sans doute besoin de prÃ©parer les donnÃ©es pour avoir les poids de chaque site dans 2 fichier sÃ©parÃ©s. Vous pouvez utiliser la commande subset
+PrÃ©parer les donnÃ©es
 
-<<subset1_2,rexample=TRUE,message='Préparation des jeux de données .'>>=
+<<subset1_2,rexample=TRUE,message='PrÃ©paration des jeux de donnÃ©es .'>>=
 peuplier1<- peuplier[peuplier$Site==1 &
                      peuplier$Age==4  &
                      peuplier$Annee==1,]
@@ -113,11 +113,11 @@ peuplier2<- peuplier[peuplier$Site==2 &
                      peuplier$Annee==1,]
 @
 
-\subsection{Tester l'hypothèse $H_0$ contre $H_1$  énoncée précédemment}
+\subsection{Tester l'hypothÃ¨se $H_0$ contre $H_1$  Ã©noncÃ©e prÃ©cÃ©demment}
 
 \subsubsection{Aspects graphiques}
 
-Une première comparaison graphique des échantillons peut être réalisée.
+Une premiÃ¨re comparaison graphique des Ã©chantillons peut Ãªtre rÃ©alisÃ©e.
 
 <<boxplot,fig.align='center',fig.width=8,fig.height=4>>=
 par(mfrow=c(1,2))
@@ -125,43 +125,43 @@ boxplot(peuplier1$Poids)
 boxplot(peuplier2$Poids)
 @
 
-\subsubsection{Test de la normalité des données}
+\subsubsection{Test de la normalitÃ© des donnÃ©es}
 
-Le test de student demande que les données des deux échantillons suivent une loi normale. On teste cette précondition à l'aide du test de Shapiro
+Le test de student demande que les donnÃ©es des deux Ã©chantillons suivent une loi normale. On teste cette prÃ©condition Ã  l'aide du test de Shapiro
 
-<<shapirotest_peuplier1_2,rexample=TRUE,message='Vérification de la normalité des échantillons à l\'aide de la fonction $shapiro.test$'>>=
+<<shapirotest_peuplier1_2,rexample=TRUE,message='VÃ©rification de la normalitÃ© des Ã©chantillons Ã  l\'aide de la fonction $shapiro.test$'>>=
 shapiro.test(peuplier1$Poids)
 shapiro.test(peuplier2$Poids)
 @
 
-Pour l'échantillon $peuplier1$ la $p_{valeur}=\Sexpr{shapiro.test(peuplier1$Poids)$p.value}$. Pour l'échantillon $peuplier2$ la $p_{valeur}=\Sexpr{shapiro.test(peuplier2$Poids)$p.value}$. Les deux $p_{valeur} > 5\%$ on ne peut donc pas rejeter l'hypothèse nulle et l'on va considérer que les deux echantillions suivent une loi normale.
+Pour l'Ã©chantillon $peuplier1$ la $p_{valeur}=\Sexpr{shapiro.test(peuplier1$Poids)$p.value}$. Pour l'Ã©chantillon $peuplier2$ la $p_{valeur}=\Sexpr{shapiro.test(peuplier2$Poids)$p.value}$. Les deux $p_{valeur} > 5\%$ on ne peut donc pas rejeter l'hypothÃ¨se nulle et l'on va considÃ©rer que les deux echantillions suivent une loi normale.
 
 \subsubsection{Comparaison des variances}
 
-Pour appliquer le test $t$ de comparaison de $2$ échantillons indépendants, il faut d'abord vérifier que les variances sont identiques. Il faut utiliser le test $F$ de \textit{Fisher}
+Pour appliquer le test $t$ de comparaison de $2$ Ã©chantillons indÃ©pendants, il faut d'abord vÃ©rifier que les variances sont identiques. Il faut utiliser le test $F$ de \textit{Fisher}
 
 \begin{itemize}
-\item $H_0$ : égalité des variances
-\item $H_1$ : variances différentes
+\item $H_0$ : Ã©galitÃ© des variances
+\item $H_1$ : variances diffÃ©rentes
 \end{itemize}
 
-<<vartest_peuplier1_2,rexample=TRUE,message='Comparaison des variance par le test de \textit{Fisher} réalisable grâce à la fonction $var.test$ .'>>=
+<<vartest_peuplier1_2,rexample=TRUE,message='Comparaison des variance par le test de \textit{Fisher} rÃ©alisable grÃ¢ce Ã  la fonction $var.test$ .'>>=
 var.test(peuplier1$Poids,peuplier2$Poids)
 @
 
-$p=\Sexpr{var.test(peuplier1$Poids,peuplier2$Poids)$p.value}$, on ne rejete pas $H_0$ pour une une valeurs de $\alpha=5\%$. On considère donc que les deux echantillons on la même variance.
+$p=\Sexpr{var.test(peuplier1$Poids,peuplier2$Poids)$p.value}$, on ne rejete pas $H_0$ pour une une valeurs de $\alpha=5\%$. On considÃ¨re donc que les deux echantillons on la mÃªme variance.
 
 On peut maintenant mettre en place le test de comparaison des moyennes.
 
-<<ttest_peuplier1_2,rexample=TRUE,message='Comparaison des moyennes par le test $t$ de \textit{student} réalisable grâce à la fonction $t.test$ '>>=
+<<ttest_peuplier1_2,rexample=TRUE,message='Comparaison des moyennes par le test $t$ de \textit{student} rÃ©alisable grÃ¢ce Ã  la fonction $t.test$ '>>=
 t.test(peuplier1$Poids,peuplier2$Poids,var.equal = TRUE)
 @
 
-Le test de student à une $p_{valeur}=\Sexpr{t.test(peuplier1$Poids,peuplier2$Poids,var.equal = TRUE)$p.value}$. Cette $p_{valeur}$ est supérieure au risque $\alpha=5\%$ habituellement pris. On peut donc rejeter l'hypothèse nulle $H_0$ et dire qu'il n'y a pas de différence entre les poids moyens des $2$ sites avec un risque $\alpha=5\%$ de se tromper.
+Le test de student Ã  une $p_{valeur}=\Sexpr{t.test(peuplier1$Poids,peuplier2$Poids,var.equal = TRUE)$p.value}$. Cette $p_{valeur}$ est supÃ©rieure au risque $\alpha=5\%$ habituellement pris. On ne peut pas rejeter l'hypothÃ¨se nulle $H_0$, et on peut dire qu'il n'y a pas de diffÃ©rence entre les poids moyens des $2$ sites avec un risque $\alpha=5\%$ de se tromper.
 
 \medskip
 
-\noindent Faire la même analyse pour la variable diamètre.
+\noindent Faire la mÃªme analyse pour la variable diamÃ¨tre.
 
 \subsection{Comparaison de l'effet de deux drogues}
 
@@ -186,12 +186,12 @@ Le test de student à une $p_{valeur}=\Sexpr{t.test(peuplier1$Poids,peuplier2$Poi
 \bottomrule[0.05cm]
 \end{tabular}
 \end{center}
-\caption{Augmentation (ou diminution) du temps de sommeil (en heures) en présence de la drogue par rapport au temps habituellement dormi.}
+\caption{Augmentation (ou diminution) du temps de sommeil (en heures) en prÃ©sence de la drogue par rapport au temps habituellement dormi.}
 \label{table-dataset-sommeil}
 \end{table}%
 
 
-<<somnifere_data,rexample=TRUE,message='Les colonnes sont crées une à une puis jointes dans un \\dataframe\\ par la fonction $data.frame$ qui accepte autant d\'arguments que l\'on veut réunir de variables. La dernière commande permet juste de vérifier le résultat.'>>=
+<<somnifere_data,rexample=TRUE,message='Les colonnes sont crÃ©es une Ã  une puis jointes dans un \\dataframe\\ par la fonction $data.frame$ qui accepte autant d\'arguments que l\'on veut rÃ©unir de variables. La derniÃ¨re commande permet juste de vÃ©rifier le rÃ©sultat.'>>=
 Hyosciamine=c(0.7,-1.6,-0.2,-1.2,-0.1,3.4,3.7,0.8,0,2)
 Hyoscine=c(1.9,0.8,1.1,0.1,-0.1,4.4,5.5,1.6,4.6,3.4)
 Hyosciamine
@@ -200,38 +200,38 @@ somnifere <- data.frame(Hyosciamine, Hyoscine)
 somnifere
 @
 
-<<moyenne_somnifere,rexample=TRUE,message='Calcul des moyennes des deux échantillons'>>=
+<<moyenne_somnifere,rexample=TRUE,message='Calcul des moyennes des deux Ã©chantillons'>>=
 mean(somnifere$Hyosciamine)
 mean(somnifere$Hyoscine)
 @
 
-La moyenne obtenue pour l'Hyosciamine semble plus faible que la moyenne obtenue pour l'Hyoscine. Tester l'augmentation ou la diminution du sommeil provoquée par l'une de ces drogues revient donc à tester que la première moyenne est effectivement plus faible que la seconde.
+La moyenne obtenue pour l'Hyosciamine semble plus faible que la moyenne obtenue pour l'Hyoscine. Tester l'augmentation ou la diminution du sommeil provoquÃ©e par l'une de ces drogues revient donc Ã  tester que la premiÃ¨re moyenne est effectivement plus faible que la seconde.
 
-Il s'agit donc d'un test de $student$ entre deux échantillons appariés. Dans ce cas l'important avant de réaliser ce test est de vérifier que la différence de temps de sommeil entre les deux somnifères pour chaque patients suit à peu près une loi normale.
+Il s'agit donc d'un test de $student$ entre deux Ã©chantillons appariÃ©s. Dans ce cas l'important avant de rÃ©aliser ce test est de vÃ©rifier que la diffÃ©rence de temps de sommeil entre les deux somnifÃ¨res pour chaque patients suit Ã  peu prÃ¨s une loi normale.
 
-<<shapiro_somnifere,rexample=TRUE,message='R permet de réaliser des opérations simultanément sur tous les éléments d\'un vecteur. La normalité est testée par la fonction $shapiro.test$'>>=
+<<shapiro_somnifere,rexample=TRUE,message='R permet de rÃ©aliser des opÃ©rations simultanÃ©ment sur tous les Ã©lÃ©ments d\'un vecteur. La normalitÃ© est testÃ©e par la fonction $shapiro.test$'>>=
 somnifere$Hyosciamine-somnifere$Hyoscine
 shapiro.test(somnifere$Hyosciamine-somnifere$Hyoscine)
 @
 
-Dans notre cas la $p_{value}=\Sexpr{shapiro.test(Hyosciamine-Hyoscine)$p.value}$ est inférieure au risque $\alpha=5\%$ pris habituellement sans en être très éloigné. Nous décidons de continuer malgré tout l'analyse en prenant désormais un risque de $\alpha=3\%$.
+Dans notre cas la $p_{value}=\Sexpr{shapiro.test(Hyosciamine-Hyoscine)$p.value}$ est infÃ©rieure au risque $\alpha=5\%$ pris habituellement sans en Ãªtre trÃ¨s Ã©loignÃ©. Nous dÃ©cidons de continuer malgrÃ© tout l'analyse en prenant dÃ©sormais un risque de $\alpha=3\%$.
 
-<<ttest_somnifere,rexample=TRUE,message='L\'égalité entre les deux moyennes est testée par la fonction $t.test$ en speécifiant le paramêtre $paired=TRUE$'>>=
+<<ttest_somnifere,rexample=TRUE,message='L\'Ã©galitÃ© entre les deux moyennes est testÃ©e par la fonction $t.test$ en speÃ©cifiant le paramÃªtre $paired=TRUE$'>>=
 t.test(somnifere$Hyosciamine,
        somnifere$Hyoscine,
        alternative='less', paired=TRUE)
 @
 
-Le test de student à une $p_{valeur}=\Sexpr{t.test(Hyosciamine, Hyoscine, alternative='less', paired=TRUE)$p.value}$. Cette $p_{valeur}$ est inférieure au risque $\alpha=3\%$ que nous avons décidé de prendre. Nous pouvons donc rejeter l'hypothèse nulle $H_0$ et considerer que l'effet des deux drogues est différent.
+Le test de student Ã  une $p_{valeur}=\Sexpr{t.test(Hyosciamine, Hyoscine, alternative='less', paired=TRUE)$p.value}$. Cette $p_{valeur}$ est infÃ©rieure au risque $\alpha=3\%$ que nous avons dÃ©cidÃ© de prendre. Nous pouvons donc rejeter l'hypothÃ¨se nulle $H_0$ et considerer que l'effet des deux drogues est diffÃ©rent.
 
-\section{Statistique non paramétrique}
+\section{Statistique non paramÃ©trique}
 
-Les tests non paramétriques seront utiles si la taille des échantillons est petite et si les hypothèses de normalités ou d'égalité des variances ne sont pas vérifiées.
+Les tests non paramÃ©triques seront utiles si la taille des Ã©chantillons est petite et si les hypothÃ¨ses de normalitÃ©s ou d'Ã©galitÃ© des variances ne sont pas vÃ©rifiÃ©es.
 
-\subsection{Comparaison de 2 régimes alimentaires}
+\subsection{Comparaison de 2 rÃ©gimes alimentaires}
 
-Deux groupes de 10 lapins chacun soumis à un régime enrichi en cholestérol ont été soumis à 2 traitements différents (pour lutter contre le cholestérol). Les résultats sont-ils différents entre les deux régimes ?
-Cholestérolémie observée en $dg/l$
+Deux groupes de 10 lapins, chacun soumis Ã  un rÃ©gime enrichi en cholestÃ©rol, ont Ã©tÃ© soumis Ã  2 traitements diffÃ©rents (pour lutter contre le cholestÃ©rol). Les rÃ©sultats sont-ils diffÃ©rents entre les deux traitements ?
+CholestÃ©rolÃ©mie observÃ©e en $dg/l$
 
 \begin{table}[htdp]
 \begin{center}
@@ -239,20 +239,20 @@ Cholestérolémie observée en $dg/l$
 		X & 23 & 15 & 28 & 26 & 13 & 8 & 21 & 25 & 24 & 29 \\
 		Y & 18 & 22 & 33 & 34 & 19 & 12 & 27 & 32 & 31 & 30
 	\end{tabular}
-	\caption{Cholestérolémie observée}
+	\caption{CholestÃ©rolÃ©mie observÃ©e}
 	\label{tab:3:Cholesterol}
 \end{center}
 \end{table}%
 
 
 \begin{itemize}
-\item[H0 :] les deux régimes n'affectent pas la cholestérolémie.
-\item[H1 :] les deux régimes affectent la cholestérolémie
+\item[H0 :] les deux traitements ont le mÃªme effet sur la cholestÃ©rolÃ©mie.
+\item[H1 :] les deux traitements affectent la cholestÃ©rolÃ©mie de faÃ§on diffÃ©rente
 \end{itemize}
 
-Vous allez utiliser un test de comparaison d'échantillons indépendants non paramétrique. C'est le test de wilcoxon.
+Vous allez utiliser un test de comparaison d'Ã©chantillons indÃ©pendants non paramÃ©trique. C'est le test de wilcoxon.
 
-<<wilcox_lapin,rexample=TRUE,message='Test de Wilcoxon: Les deux drogues n\'ont pas d\'effets différents.'>>=
+<<wilcox_lapin,rexample=TRUE,message='Test de Wilcoxon: Les deux drogues n\'ont pas d\'effets diffÃ©rents.'>>=
 x<-c(23,15,28,26,13,8,21,25,24,29)
 y<-c(18,22,33,34,19,12,27,32,31,30)
 wilcox.test(x,y)
@@ -260,10 +260,10 @@ wilcox.test(x,y)
 
 \subsection{Comparaison de l'effet de deux drogues}
 
-Le test de normalité des données pour la comparaison des deux somnifères n'était pas vraiment concluant. Refaite ce test en utilisant un test non paramétrique. Attention, il s'agissait d'un test sur des données appariées. Regardez bien le manuel de la fonction $wilcox.text$
+Le test de normalitÃ© des donnÃ©es pour la comparaison des deux somnifÃ¨res n'Ã©tait pas vraiment concluant. Refaite ce test en utilisant un test non paramÃ©trique. Attention, il s'agissait d'un test sur des donnÃ©es appariÃ©es. Regardez bien le manuel de la fonction $wilcox.text$
 
 \begin{center}
-\textbf{Rédigez cet exercice pour le compte rendu final de TP}
+\textbf{RÃ©digez cet exercice pour le compte rendu final de TP}
 \end{center}
 
 \end{document}
