@@ -1,0 +1,339 @@
+\documentclass{article}
+\usepackage{xcolor}
+
+\usepackage{geometry} % see geometry.pdf on how to lay out the page. There's lots.
+\usepackage{natbib}
+\usepackage[francais]{babel}
+\usepackage{booktabs}
+\usepackage[T1]{fontenc}
+\usepackage[latin1]{inputenc}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{fancybox}
+\usepackage{listings}
+\lstloadlanguages{R}
+\usepackage[sumlimits]{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{pdfsync}  % enable tex source and pdf output syncronicity
+\usepackage{txfonts}                     % Public Times New Roman text & math font
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+
+\lstset{frame=tb,
+language=R,
+aboveskip=3mm,
+belowskip=3mm,
+showstringspaces=false,
+columns=flexible,
+numbers=none,
+keywordstyle=\color{blue},
+numberstyle=\tiny\color{gray},
+commentstyle=\color{dkgreen},
+stringstyle=\color{mauve},
+breaklines=true,
+breakatwhitespace=true,
+tabsize=3
+}
+
+\newtheoremstyle{rexample}
+    {3pt}%Space above
+    {3pt}% Space below
+    {\small}%Body font
+    {}%Indent amount
+    {\bfseries}%Theorem head font
+    { :}%Punctuation after theorem head
+    {.5em}%Space after theorem head
+    {}%Theorem head spec (can be left empty, meaning `normal')
+\theoremstyle{rexample}
+\newtheorem{rexample}{Exemple R - }
+
+\geometry{a4paper} % or letter or a5paper or ... etc
+% \geometry{landscape} % rotated page geometry
+
+\pagestyle{headings}
+\pagenumbering{arabic}
+
+\newcommand{\dataframe}{\textit{data.frame}}
+\newcommand{\R}{\textit{R}}
+
+\title{TD5 : régression linéaire}
+
+\author{BIO5XX - BIOSTATISTIQUE L3}
+
+\begin{document}
+
+
+\maketitle
+
+<<setup, include=FALSE>>=
+library(knitr)
+knit_hooks$set(rexample = function(before, options, envir) {
+  if (before)
+    sprintf('\\begin{rexample} ~~ \\begin{quote}%s\\end{quote}\\label{%s}\\hfill{}',
+            options$message,
+            options$label)
+  else print('\\end{rexample}')
+})
+@
+
+\shadowbox{\parbox{15cm}{\textbf{Objectifs de la séance} \\ Régression linéaire sous R}}
+
+
+A partir des données de peupliers utilisées en séance 2, on souhaite déterminer s'il est possible de prédire le poids d'un arbre à partir de sa hauteur et de son diamètre. En effet, ces arbres vigoureux à croissance rapide risquent un jour de constituer une source de remplacement en combustible et produits chimiques. Des études préliminaires ont montré l'existence d'une relation étroite entre le poids du bois sec des jeunes peupliers et une variable fonction du diamètre et de la taille des arbres (DDH=carré des diamètres multiplié par la hauteur).
+
+On demande de déterminer si l'on peut utiliser le diamètre et la hauteur pour prédire de manière fiable le rendement en bois.
+
+L'analyse sera réalisée sur les arbres âgés de 3 ans, plantés l'année 1, et n'ayant subi aucun traitement (arbres témoins : traitement 1).
+
+
+<<lire_donnees,rexample=TRUE,message='Lecture des données à partir du fichier $peuplier.txt$'>>=
+peuplier<-read.table("peuplier.txt",header=TRUE)
+names(peuplier)
+@
+
+<<prepare_donnees,rexample=TRUE,message='Préparation du fichier de données : arbre âges de 3 ans, plantés l\'année 1, ayant subis le traitement 1.'>>=
+peuplier1<-peuplier[peuplier$Age==3 &
+                    peuplier$Annee==1 &
+                    peuplier$Traitement==1,]
+peuplier1
+peuplier2<-peuplier1[,4:6]
+peuplier2
+@
+
+\section{Mise en place de l'analyse}
+
+<<visualise_data_plot,fig.align='center',fig.width=4,fig.height=4>>=
+plot(peuplier2)
+@
+
+La variable poids semble bien corrélée avec les variables diamètre et hauteur.
+En réalité on va étudier la relation qui lie le poids à la variable ddh ($diam\grave{e}tre^2 \times hauteur$).
+
+\begin{itemize}
+\item Justifier cette relation.
+\item Quelle est la variable réponse (à expliquer) ?
+\item Quelle est la variable explicative ?
+\end{itemize}
+
+<<compute_ddh,rexample=TRUE,message='Création de la nouvelle variable ddh'>>=
+ddh<-peuplier2$Diametre*peuplier2$Diametre*peuplier2$Hauteur
+ddh
+@
+<<plot_ddh,fig.align='center',fig.width=4,fig.height=4>>=
+plot(ddh,peuplier2$Poids)
+@
+
+La relation semble linéaire. Un point semble bien à part. Il s'agit en fait d'une erreur dans les données. C'est l'observation 15 qui pour une valeur de ddh élevée (73.61) a un poids trop faible (0.07). Vous corrigerez cette valeur de Poids en mettent 0.7 à la place.
+
+<<correction_poids,rexample=TRUE,message='Correction des données : l\'observation 15 a un poids trop faible (0.07). Vous corrigerez cette valeur de Poids en mettent 0.7 à la place.'>>=
+ddh
+peuplier2$Poids
+peuplier2[15,3] <- 0.7
+@
+
+Vérifier que le point a été bien enlevé sur le graphique.
+
+On va donc chercher le modèle $Poids=a \times ddh+b+e$, ou e est l'erreur (les erreurs sont indépendantes, de variance constante et suivent une loi normale de moyenne nulle et de variance constante)
+
+\section{Calcul des paramètres du modèle}
+<<param_modele,rexample=TRUE,message='Calcul des paramètres du modèle.'>>=
+modele1<-lm(peuplier2$Poids~ddh)
+modele1
+@
+
+L'équation de la droite est donc : $Poids=\Sexpr{modele1$coefficients[2]} \times ddh+\Sexpr{modele1$coefficients[1]}$.
+
+\section{Validation du modèle}
+
+\subsection{Test sur la pente}
+
+\begin{itemize}
+\item[H0 :] $a=0$
+\item[H1 :] $a \neq 0$
+\end{itemize}
+
+<<t_test_modele,rexample=TRUE,message='La p-value du test t sur la pente est quasi-nulle ($p<2.10^{-16}$): on accepte H1. Il y a bien une relation entre le Poids et ddh. ddh explique $98\\%$  de la variation du Poids. C\'est relativement élevé.'>>=
+summary(modele1)
+@
+
+\subsection{Etude des résidus}
+
+<<residus_modele,rexample=TRUE,message='Regarder les objets contenus dans lm. On peut par exemple appeler les résidus brutes'>>=
+?lm
+modele1$residuals
+@
+<<residus_modele_plot,fig.align='center',fig.width=5,fig.height=5>>=
+par(mfrow=c(2,2))
+plot(modele1)
+@
+
+Il s'agissait de vous montrer ce qu'il est possible de faire avec la fonction lm. Mais on va reprendre les graphiques dont on a besoin « à la main ». Regarder l'aide pour comprendre quels graphiques ont été tracés ici.
+
+<<residus_modele_hist,fig.align='center',fig.width=4,fig.height=4>>=
+residus<-modele1$residuals
+hist(residus)
+shapiro.test(modele1$residuals)
+@
+
+On ne peut pas accepter l'hypothèse de normalité au seuil de $5\%$.
+
+On va neanmoins maintenant s'intéresser à la distribution des résidus studentisés en fonction de ddh.
+
+<<residus_disp_plot,fig.align='center',fig.width=4,fig.height=4>>=
+plot(ddh,y=rstudent(modele1),ylim=c(-3,3))
+text(x=ddh,y=rstudent(modele1),label=(1:20),adj=1.5,cex=0.8)
+abline(+2,0,lty=2)
+abline(0,0,lty=1)
+abline(-2,0,lty=2)
+@
+
+
+\section{Régression linéaire multiple}
+
+\subsection{\'Etude de la processionnaire du pin}
+
+\subsubsection{Description des données <<processionnaire du pin>>}
+
+33 observations ont  été réalisées pour étudier les facteurs qui influencent la répartition des
+nids de processionnaire dans les pins. Il s'agit en fait de rechercher une relation entre les attaques de la processionnaire du pin et les diverses caractéristiques du peuplement forestier.
+
+\begin{itemize}
+\item Unité de l'étude : parcelle de 10 ha
+\item Sous unités : placettes de 5 ha.
+\end{itemize}
+
+
+\begin{enumerate}
+\item Altitude (m)
+\item Pente (en \degre)
+\item Densité (Nombre de pins/placette de 5 ha)
+\item Hauteur (en m)
+\item Diamètre du tronc (en cm)
+\item Nombre moyen de nids de processionnaire par arbre
+\end{enumerate}
+
+Objectif
+
+Recherche d'une relation linéaire entre les attaques de processionnaire du
+pin et diverses caractéristiques du peuplement forestier (altitude, pente,
+densité, hauteur, diamètre du tronc)...
+
+
+\subsection{Etude préliminaire }
+
+Calculer les moyennes et les variances des différentes variables.
+
+<<lire_donnees_pin,rexample=TRUE,message='Lecture des données à partir du fichier $pin.txt$'>>=
+pin<-read.table("pin.txt",h=T)
+names(pin)
+colMeans(pin)
+var(pin)
+@
+
+Calculer la corrélation entre toutes les variables
+
+<<cor_donnees_pin,rexample=TRUE,message='Corrélations pour chaque paire de variables.'>>=
+cor(pin)
+cor.test(pin$haut,pin$diam)
+@
+
+A priori il faudrait ne prendre que hauteur ou que diamètre. Dans un premier temps on va prendre toutes les variables.
+
+<<oin_plot,fig.align='center',fig.width=6,fig.height=6>>=
+plot(pin)
+@
+
+L'objectif de l'étude est donc d'étudier la relation entre la variable
+réponse y (nombre d'attaques par la processionnaire du pin représentée par
+le nombre moyen de nids de processionnaire par arbre), en fonction des
+autres variables.
+
+\subsection{Mise en place de la régression multiple}
+
+\begin{itemize}
+\item \'Enoncer les différentes hypothèses du modèle de régression multiple
+
+\item \'Etudier  la relation entre y (nombre d'attaques) et toutes les variables
+explicatives.
+
+\end{itemize}
+
+<<modele_pin,rexample=TRUE,message='Mise en place du modèle.'>>=
+lm1<-with(pin,
+          lm(proce~alt+pente+densi+haut+diam)
+         )
+@
+
+<<summary_pin,rexample=TRUE,message='Mise en place du modèle.'>>=
+summary(lm1)
+@
+
+On observe que les p-values des tests t associés aux variables alt, pente
+Haut et diam sont significatifs.
+
+Le coefficient de corrélation au carré vaut $0.61$. $61 \%$ de la variation de
+proc est expliqué par la régression.
+
+\subsection{Recherche du meilleur modèle}
+
+<<aic_pin,rexample=TRUE,message='Utilisation de la fonction stepAIC.'>>=
+library(MASS)
+lm0<-lm(pin$proce~1)
+?stepAIC
+stepAIC(lm0,
+        .~pin$alt+pin$pente+pin$densi+pin$haut+pin$diam,
+        trace=F)
+@
+
+
+Le meilleur modèle retenu avec le critère d'AIC est le modèle avec densi, pente et alt.
+Regardons ce modèle de plus près.
+
+<<best_pin,rexample=TRUE,message='Utilisation de la fonction stepAIC.'>>=
+pin.lm1<-lm(pin$proce ~ pin$densi + pin$pente + pin$alt)
+summary(pin.lm1)
+@
+
+Donc il semble que seul densi et alt sont vraiment significative dans le modèle.
+Nous allons étudier plus en détail les résidus du modèle retenu : $proce~pente+alt$
+
+\subsection{Etude des résidus}
+
+<<residu_pin,rexample=TRUE,message='Utilisation de la fonction stepAIC.'>>=
+pin.lm2<-lm(pin$proce ~ pin$pente + pin$alt)
+pin.lm2
+
+residus<-pin.lm2$residuals
+shapiro.test(residus)
+@
+
+
+<<disp_residu_pin,,fig.align='center',fig.width=4,fig.height=4>>=
+plot(x=pin$proce,
+     y=rstudent(pin.lm2),ylim=c(-3,3))
+abline(+2,0,lty=2)
+abline(0,0,lty=1)
+abline(-2,0,lty=2)
+@
+
+
+\section*{Exercice à rédiger}
+
+Reprendre les données du modèle $modele1$ pour prédire le poids des arbres à partir de la variable $ddh$
+
+On va donc chercher un autre modèle qui permettrait d'éviter ce problème de non normalité des résidus. Une transformation ln pourrait peut être améliorer le modèle.
+
+Refaite l'analyse complète avec le modèle
+
+\begin{equation}
+\log{(poids)} = a . \log{(ddh)} + b
+\end{equation}
+
+\textbf{Rédiger un compte rendu (1 page recto-verso par binome sur cette analyse) }
+
+
+
+\end{document}
