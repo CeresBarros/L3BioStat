@@ -2,3 +2,5 @@ inst/doc
 .Rproj.user
 .Rhistory
 .RData
+test.Rmd
+test.nb.html
