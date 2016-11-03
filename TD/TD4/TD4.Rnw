@@ -79,7 +79,7 @@ knit_hooks$set(rexample = function(before, options, envir) {
 })
 @
 
-\shadowbox{\parbox{15cm}{\textbf{Objectifs de la séance} \\ Tester l'effet d'une variable discrète sur une variable continue par la méthode d'analyse de la variance à un ou deux facteurs contrôlés}}
+\shadowbox{\parbox{4in}{\textbf{Objectifs de la séance} \\ Tester l'effet d'une variable discrète sur une variable continue par la méthode d'analyse de la variance à un ou deux facteurs contrôlés}}
 
 \medskip
 
@@ -100,7 +100,7 @@ Si l'on considère l'analyse de la variance à un facteur comme une façon de compa
 
 L'influence du milieu de culture sur la croissance du bacille de Calmette et Guérin à été testé. Il s'agit de vérifier si l'utilisation d'au moins un des cinq milieux : ${A,B,C,D,E}$ augmente ou diminue cette croissance. Pour chacun des cinq milieux dix cultures sont réalisées dans des conditions équivalentes. \`A la fin de celles-ci un aliquote de chacune des cinquante cultures est prélevé et étalé sur une boite de milieu solide afin de dénombrer le nombre de bactéries présentes.
 
-\begin{table}[!h]
+\begin{table}[!ht]
 \begin{center}
   \begin{tabular}{@{} rrrrr @{}}
    \toprule[0.05cm]
@@ -171,7 +171,9 @@ Réaliser ces deux tests à la main pour le milieu $A$. puis regardez la manipulat
 
 \medskip
 
-<<manip_normality_plot,fig.align='center',fig.width=8,fig.height=4,rexample=TRUE,message='Test de la normalité des données de chaque échantillon. Le test doit être réalisé sur chacune des colonnes du dataframe $BCG$. C\'est pour nous l\'occasion d\'utiliser la commande $apply$ qui permet d\'appliquer une fonction soit aux lignes soit aux colonnes d\'un tableau. Le premier argument indique le tableau à analyser le deuxième si l\'on travaille par ligne ($1$) ou par colonne ($2$). Le dernier indique la fonction à appliquer. Successivement nous utilisons $apply$ pour tracer les 5 qq-plots et pour calculer les 5 tests de \\textit{Shapiro-Wilk}'>>=
+<<manip_normality,rexample=TRUE,message='Test de la normalité des données de chaque échantillon. Le test doit être réalisé sur chacune des colonnes du dataframe $BCG$. C\'est pour nous l\'occasion d\'utiliser la commande $apply$ qui permet d\'appliquer une fonction soit aux lignes soit aux colonnes d\'un tableau. Le premier argument indique le tableau à analyser, le deuxième si l\'on travaille par ligne ($1$) ou par colonne ($2$). Le dernier indique la fonction à appliquer. Successivement nous utilisons $apply$ pour tracer les 5 qq-plots et pour calculer les 5 tests de \\textit{Shapiro-Wilk}'>>=
+@
+<<manip_normality_plot,fig.align='center',fig.width=8,fig.height=4>>=
 par(mfrow=c(2,3))
 apply(BCG,2,function(x) {qqnorm(x);qqline(x)})
 apply(BCG,2,function(x) shapiro.test(x)$p.value)
@@ -393,6 +395,8 @@ rendement <- data.frame(Faib_Pail = c(8,11,11,10,7),
 rendement
 colMeans(rendement)
 diag(var(rendement))
+@
+<<manip_data_plot,fig.align='center',fig.width=8,fig.height=4>>=
 boxplot(rendement)
 @
 
